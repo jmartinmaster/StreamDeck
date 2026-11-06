@@ -41,8 +41,8 @@ flowchart TD
         end
 
         Focus["GNOME Shell Focus Extension\n(org.mmesp32.DeckFocus)"] -->|FocusChanged(app, title)| D
-        UInput["/dev/uinput (evdev)"] <---|Simulate Key Chords| D
-        Shell["Subprocess Exec"] <---|Run Commands| D
+        D -->|Simulate Key Chords| UInput["/dev/uinput (evdev)"]
+        D -->|Run Commands| Shell["Subprocess Exec"]
 
         T <-->|org.mmesp32.Deckd1| D
         G <-->|Edit Profiles & Overrides| P
@@ -58,7 +58,7 @@ flowchart TD
         Client <--> UI
     end
 
-    D <===>|"Bluetooth LE (Nordic UART Service)\nOR USB CDC Serial (115200)"| Client
+    D <==>|"Bluetooth LE (Nordic UART Service)\nOR USB CDC Serial (115200)"| Client
 ```
 
 ---
