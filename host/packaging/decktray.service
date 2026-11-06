@@ -1,0 +1,14 @@
+[Unit]
+Description=MMEsp32 Deck tray
+After=graphical-session.target deckd.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/decktray
+EnvironmentFile=-%E/mmesp32-deckd/environment
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target

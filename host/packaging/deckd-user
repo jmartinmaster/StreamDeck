@@ -1,0 +1,73 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# This file is part of Stream Deck.
+#
+# Stream Deck is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Stream Deck is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Stream Deck.  If not, see <https://www.gnu.org/licenses/>.
+set -eu
+
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"
+DECK_CONFIG="$CONFIG/mmesp32-deckd"
+case "${1:-help}" in
+    enable)
+        if [ "$(id -u)" -eq 0 ]; then
+            echo "Run 'deckd-user enable' as your desktop user, not with sudo." >&2
+            exit 1
+        fi
+        for unit in deckd.service decktray.service; do
+            if [ -e "$CONFIG/systemd/user/$unit" ] || [ -L "$CONFIG/systemd/user/$unit" ]; then
+                echo "Existing user unit shadows the packaged $unit: $CONFIG/systemd/user/$unit" >&2
+                echo "Stop it and move that unit aside before enabling the package." >&2
+                exit 1
+            fi
+        done
+        if [ ! -w /dev/uinput ]; then
+            echo "Cannot write /dev/uinput. Follow the group setup in /usr/share/doc/mmesp32-deckd/README.md, then log out/in." >&2
+            exit 1
+        fi
+        install -d -m 700 "$DECK_CONFIG"
+        if [ ! -e "$DECK_CONFIG/profiles.toml" ]; then
+            install -m 600 /usr/share/mmesp32-deckd/profiles.toml "$DECK_CONFIG/profiles.toml"
+        fi
+        systemctl --user daemon-reload
+        systemctl --user enable --now deckd.service decktray.service
+        if command -v gnome-extensions >/dev/null 2>&1; then
+            if ! gnome-extensions enable deckfocus@mmesp32; then
+                echo "GNOME has not loaded Deck Focus yet. Log out/in, then run: gnome-extensions enable deckfocus@mmesp32" >&2
+            fi
+        else
+            echo "GNOME Shell tools are absent; automatic focus profiles are unavailable." >&2
+        fi
+        echo "Deck enabled. Edit profiles in $DECK_CONFIG/profiles.toml"
+        ;;
+    disable)
+        systemctl --user disable --now decktray.service deckd.service
+        ;;
+    release-usb|resume-usb)
+        enabled=false
+        if [ "$1" = resume-usb ]; then enabled=true; fi
+        busctl --user call org.mmesp32.Deckd /org/mmesp32/Deckd \
+            org.mmesp32.Deckd1 SetUsbEnabled b "$enabled"
+        ;;
+    status)
+        systemctl --user status deckd.service decktray.service --no-pager
+        ;;
+    help|--help|-h)
+        echo "Usage: deckd-user {enable|disable|release-usb|resume-usb|status}"
+        ;;
+    *)
+        echo "Unknown command: $1" >&2
+        exit 2
+        ;;
+esac

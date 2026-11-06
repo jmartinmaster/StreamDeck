@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=MMEsp32 Deck Tray
+Comment=Status and connection controls for the shortcut deck daemon
+Exec=systemctl --user start decktray.service
+Icon=input-keyboard
+Terminal=false
+Categories=Utility;

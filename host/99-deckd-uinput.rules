@@ -1,0 +1,3 @@
+# deckd: let members of the "input" group drive the virtual keyboard.
+# Install to /etc/udev/rules.d/ and add your user to the "input" group.
+KERNEL=="uinput", SUBSYSTEM=="misc", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"

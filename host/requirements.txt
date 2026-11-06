@@ -1,0 +1,7 @@
+pyserial>=3.5
+evdev>=1.6
+dbus-next>=0.2
+zeroconf>=0.130
+qtpy>=2.4.0
+PyQt6>=6.5.0
+tomli-w>=1.0.0

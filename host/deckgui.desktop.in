@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Stream Deck Editor
+GenericName=Macro & Profile Editor
+Comment=Visual profile and settings editor for MMEsp32 Stream Deck
+Exec=@INSTALL_DIR@/.venv/bin/python @INSTALL_DIR@/deckgui.py
+Icon=preferences-desktop-keyboard
+Terminal=false
+Categories=Utility;Settings;HardwareSettings;
+Keywords=streamdeck;macro;profile;deckd;hotkey;
