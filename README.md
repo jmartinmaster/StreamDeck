@@ -40,7 +40,7 @@ flowchart TD
             P["profiles.toml"]
         end
 
-        Focus["GNOME Shell Focus Extension\n(org.mmesp32.DeckFocus)"] -->|FocusChanged(app, title)| D
+        Focus["GNOME Shell Focus Extension\n(org.mmesp32.DeckFocus)"] -->|"FocusChanged(app, title)"| D
         D -->|Simulate Key Chords| UInput["/dev/uinput (evdev)"]
         D -->|Run Commands| Shell["Subprocess Exec"]
 
