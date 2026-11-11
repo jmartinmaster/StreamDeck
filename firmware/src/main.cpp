@@ -78,6 +78,10 @@ void loop() {
             uint8_t btn = cmd.substring(6).toInt();
             Serial.printf("[main] Simulating press on button %u\n", btn);
             deck_client_send_press(btn);
+        } else if (cmd.startsWith("launcher ")) {
+            uint8_t idx = cmd.substring(9).toInt();
+            Serial.printf("[main] Simulating launcher press on slot %u\n", idx);
+            deck_client_send_launcher_press(idx);
         } else if (cmd == "next") {
             deck_client_send_page_next();
         } else if (cmd == "prev") {
@@ -86,8 +90,9 @@ void loop() {
             deck_client_scan_hosts();
         } else if (cmd == "status") {
             const DeckClientState& st = deck_client_get_state();
-            Serial.printf("[status] Link: %d, Focus: %s - %s, Page: %u/%u\n",
-                          st.linkState, st.focusApp, st.focusTitle, st.page, st.pageCount);
+            const DeckLauncherState& ln = deck_client_get_launcher();
+            Serial.printf("[status] Link: %d, Focus: %s - %s, Page: %u/%u, Launcher: %u\n",
+                          st.linkState, st.focusApp, st.focusTitle, st.page, st.pageCount, ln.count);
         }
     }
 

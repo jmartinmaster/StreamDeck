@@ -174,33 +174,34 @@ def test_pty_profile_switch() -> None:
         session = DeckSession(port, profiles, DummyInjector(), watcher)
         session.handshake()
 
-        watcher.push("org.gnome.TextEditor", "notes - Text Editor")
+        watcher.push("code_code", "notes - VS Code")
         session.tick()
 
         lines = read_device_lines(
             master_fd,
             want=lambda ls: any(
-                l.startswith("DECK FOCUS org.gnome.TextEditor") for l in ls)
+                l.startswith("DECK FOCUS code_code") for l in ls)
             and any(l.startswith("DECK LAYOUT") and "Save" in l for l in ls))
 
         focus_idx = next(
             i for i, l in enumerate(lines)
-            if l.startswith("DECK FOCUS org.gnome.TextEditor"))
-        layout_line = lines[focus_idx + 1]
+            if l.startswith("DECK FOCUS code_code"))
+        layout_line = next(
+            l for l in lines[focus_idx + 1 :] if l.startswith("DECK LAYOUT")
+        )
         assert lines[focus_idx] == \
-            "DECK FOCUS org.gnome.TextEditor\tnotes - Text Editor", lines
-        assert layout_line.startswith("DECK LAYOUT"), lines
-        assert "Save" in layout_line and "Find" in layout_line, layout_line
+            "DECK FOCUS code_code\tnotes - VS Code", lines
+        assert "Save" in layout_line and "FindAll" in layout_line, layout_line
 
         # Title-only change: FOCUS is re-pushed, LAYOUT is not.
-        watcher.push("org.gnome.TextEditor", "other - Text Editor")
+        watcher.push("code_code", "other - VS Code")
         session.tick()
         more = read_device_lines(
             master_fd,
-            want=lambda ls: any("other - Text Editor" in l for l in ls))
-        focus2 = next(l for l in more if "other - Text Editor" in l)
+            want=lambda ls: any("other - VS Code" in l for l in ls))
+        focus2 = next(l for l in more if "other - VS Code" in l)
         assert focus2 == \
-            "DECK FOCUS org.gnome.TextEditor\tother - Text Editor", more
+            "DECK FOCUS code_code\tother - VS Code", more
         assert not any(l.startswith("DECK LAYOUT") for l in more), more
 
         port.close()

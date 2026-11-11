@@ -76,6 +76,10 @@ if HAVE_DBUS:
         def SetUsbEnabled(self, enabled: 'b'):  # noqa: F821
             self._control.set_usb_enabled(enabled)
 
+        @method()
+        def SetWifiEnabled(self, enabled: 'b'):  # noqa: F821
+            self._control.set_wifi_enabled(enabled)
+
         @signal()
         def StatusChanged(self) -> 'a{ss}':  # noqa: F722
             return self._control.status()
@@ -85,14 +89,16 @@ class DeckControl:
     """Exports the deckd control interface on the session bus."""
 
     def __init__(self, profiles, bus_name=CONTROL_BUS_NAME,
-                 object_path=CONTROL_OBJECT_PATH, ble_enabled=False):
+                 object_path=CONTROL_OBJECT_PATH, ble_enabled=False,
+                 usb_enabled=False, wifi_enabled=False):
         self._profiles = profiles
         self.bus_name = bus_name
         self.object_path = object_path
         self._lock = threading.Lock()
         self._override = ""
         self._ble_enabled = bool(ble_enabled)
-        self._usb_enabled = True
+        self._usb_enabled = bool(usb_enabled)
+        self._wifi_enabled = bool(wifi_enabled)
         self._status = {
             "transport": "none",
             "active_profile": "default",
@@ -101,7 +107,8 @@ class DeckControl:
             "focus_title": "",
             "connected": "0",
             "ble": "0",
-            "usb": "1",
+            "usb": "1" if self._usb_enabled else "0",
+            "wifi": "1" if self._wifi_enabled else "0",
         }
         self._loop = None
         self._interface = None
@@ -140,6 +147,17 @@ class DeckControl:
             self._usb_enabled = bool(enabled)
         log.info("USB connections %s", "enabled" if enabled else "released")
         self.publish(usb="1" if enabled else "0")
+
+    def wifi_enabled(self):
+        """Desired WiFi TCP/mDNS listener state (what the user asked for)."""
+        with self._lock:
+            return self._wifi_enabled
+
+    def set_wifi_enabled(self, enabled):
+        with self._lock:
+            self._wifi_enabled = bool(enabled)
+        log.info("WiFi connections %s", "enabled" if enabled else "disabled")
+        self.publish(wifi="1" if enabled else "0")
 
     def publish(self, **fields):
         """Update the status snapshot and emit StatusChanged."""

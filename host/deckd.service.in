@@ -1,6 +1,6 @@
 [Unit]
-Description=MMEsp32 Stream Deck daemon (deckd)
-Documentation=file://@INSTALL_DIR@/../../STREAMDECK_PLAN.md
+Description=Stream Deck host daemon (deckd)
+Documentation=https://github.com/jmartinmaster/StreamDeck
 After=graphical-session.target
 
 [Service]

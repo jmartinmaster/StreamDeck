@@ -23,7 +23,7 @@ buttons = [
     { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
     { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
     { label = "Tasks", shell = "mission-center", icon = "activity", color = "warn" },
-    { label = "Sleep", shell = "systemctl suspend", icon = "moon", color = "bad" },
+    { label = "Close", keys = "alt+f4", icon = "close", color = "bad" },
 ]
 
 [app.code]
@@ -358,3 +358,55 @@ buttons = [
     { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
     { label = "Root", shell = "nautilus /", icon = "hard-drive", color = "warn" },
 ]
+
+[launcher]
+auto_return = true
+configured = true
+
+[[launcher.apps]]
+color = "accent"
+icon = "globe"
+id = "microsoft-edge.desktop"
+label = "Microsoft Edg"
+
+[[launcher.apps]]
+color = "accent"
+icon = "folder"
+id = "org.gnome.Nautilus.desktop"
+label = "Files"
+
+[[launcher.apps]]
+color = "warn"
+icon = "terminal"
+id = "org.gnome.Ptyxis.desktop"
+label = "Terminal"
+
+[[launcher.apps]]
+color = "good"
+icon = "activity"
+id = "htop.desktop"
+label = "Htop"
+
+[[launcher.apps]]
+color = "accent"
+icon = "code"
+id = "code_code.desktop"
+label = "Visual Studio"
+
+[[launcher.apps]]
+color = "idle"
+icon = "settings"
+id = "nm-connection-editor.desktop"
+label = "Advanced Netw"
+
+[[launcher.apps]]
+color = "accent"
+icon = "app"
+id = "org.gnome.Calculator.desktop"
+label = "Calculator"
+
+[[launcher.apps]]
+color = "good"
+icon = "music"
+id = "org.gnome.Snapshot.desktop"
+label = "Camera"

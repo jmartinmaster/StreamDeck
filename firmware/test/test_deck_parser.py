@@ -25,8 +25,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     source = (ROOT / "src/deck_client.cpp").read_text()
-    parser = source[source.index("static void process_deck_line("):
+    parser = source[source.index("static void process_deck_line(const String& line) {"):
                     source.index("#if DECK_TRANSPORT_BLE\nstatic void on_notify_data")]
+    launcher_api = source[source.index("bool deck_client_send_launcher_press("):
+                          source.index("void deck_client_scan_hosts(")]
     remember = source[source.index("static bool remember_host("):
                       source.index("class AdvertisedDeviceCallbacks")]
     host_api = source[source.index("void deck_client_scan_hosts("):
@@ -44,12 +46,15 @@ def main():
 
 #define DECK_MAX_BUTTONS 16
 #define DECK_MAX_LABEL_LEN 20
+#define DECK_MAX_LAUNCHER_APPS 72
+#define DECK_DEVICE_ID "StreamDeck-Test"
 
 class String : public std::string {
 public:
     using std::string::string;
     using std::string::operator=;
     String(const std::string& value) : std::string(value) {}
+    String(unsigned int value) : std::string(std::to_string(value)) {}
     bool startsWith(const char* prefix) const { return rfind(prefix, 0) == 0; }
     String substring(size_t start) const { return substr(start); }
     String substring(size_t start, size_t end) const { return substr(start, end - start); }
@@ -68,13 +73,19 @@ public:
 struct { void println(const String&) {} } Serial;
 static uint32_t millis() { return 123; }
 static String sent;
-static bool send_line(const String& line) { sent = line; return true; }
+static bool send_line(const String& line, bool = true) { sent = line; return true; }
 '''
 
     state = r'''
 static DeckClientState s_deckState = {};
+static DeckLauncherState s_launcherState = {};
+static DeckLauncherState s_launcherStaging = {};
+static uint16_t s_launcherExpectedCount = 0;
+static DeckTransport s_transport = DECK_MODE_BLE;
+static bool s_client_active = true;
 static bool s_layout_ready;
 static uint16_t s_pending_seq;
+static uint32_t s_pending_ms = 0, s_next_dial_ms = 0;
 static bool s_choose_host, s_scan_requested;
 static char s_preferred_address[18] = {};
 static struct { char address[18]; char label[48]; } s_hosts[8];
@@ -83,6 +94,11 @@ static uint16_t s_host_selected;
 static int critical_depth, s_hosts_mux;
 #define portENTER_CRITICAL(mux) do { (void)(mux); assert(!critical_depth); critical_depth++; } while(0)
 #define portEXIT_CRITICAL(mux) do { (void)(mux); assert(critical_depth == 1); critical_depth--; } while(0)
+static void apply_fallback_labels() {}
+static void close_wifi_client() {}
+static bool deck_client_launcher_ready() {
+    return s_deckState.linkState == DECK_LINK_CONNECTED && s_launcherState.ready && !s_deckState.actionPending;
+}
 '''
 
     checks = r'''
@@ -107,6 +123,24 @@ int main() {
     assert(strcmp(s_deckState.focusApp, "code") == 0);
     process_deck_line("DECK LAYOUT 1/1\tCopy\tPaste");
     assert(s_layout_ready && strcmp(s_deckState.buttons[0].label, "Copy") == 0);
+    process_deck_line("DECK LAUNCHER BEGIN\t0\t2");
+    process_deck_line("DECK LAUNCHER ITEM\t0\tFirefox\tglobe\taccent");
+    process_deck_line("DECK LAUNCHER ITEM\t1\tTerminal\tterminal\tgood");
+    process_deck_line("DECK LAUNCHER END");
+    assert(s_launcherState.ready && !s_launcherState.autoReturn && s_launcherState.count == 2);
+    assert(strcmp(s_launcherState.items[0].label, "Firefox") == 0);
+    assert(strcmp(s_launcherState.items[0].icon, "globe") == 0);
+    assert(strcmp(s_launcherState.items[0].color, "accent") == 0);
+    assert(strcmp(s_launcherState.items[1].label, "Terminal") == 0);
+    s_deckState.linkState = DECK_LINK_CONNECTED;
+    s_deckState.actionPending = false;
+    s_deckState.nextSeq = 42;
+    assert(deck_client_send_launcher_press(1));
+    assert(sent == "DECK LAUNCHER PRESS 1 42" && s_deckState.actionPending);
+    assert(!deck_client_send_launcher_press(0));
+    process_deck_line("DECK ACK 42");
+    assert(!s_deckState.actionPending);
+    assert(!deck_client_send_launcher_press(9));
     process_deck_line("DECK BYE busy");
     assert(!s_layout_ready && strstr(s_deckState.feedback, "busy"));
     process_deck_line("DECK PING 1234");
@@ -144,7 +178,7 @@ int main() {
     with tempfile.TemporaryDirectory() as temp:
         src = Path(temp) / "parser.cpp"
         binary = Path(temp) / "parser"
-        src.write_text(harness + types + state + parser + remember + host_api + checks)
+        src.write_text(harness + types + state + parser + launcher_api + remember + host_api + checks)
         subprocess.run(["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
                         str(src), "-o", str(binary)], check=True)
         subprocess.run([str(binary)], check=True)

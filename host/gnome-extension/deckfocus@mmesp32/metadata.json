@@ -1,7 +1,7 @@
 {
   "uuid": "deckfocus@mmesp32",
   "name": "Deck Focus",
-  "description": "Exports the focused window (app id, title) on the session bus for the MMEsp32 deckd daemon.",
+  "description": "Exports the focused window (app id, title) on the session bus for the deckd daemon.",
   "shell-version": ["50"],
-  "url": "https://github.com/jamie/MMEsp32"
+  "url": "https://github.com/jmartinmaster/StreamDeck"
 }

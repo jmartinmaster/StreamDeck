@@ -19,6 +19,8 @@
 
 #pragma once
 
+#ifdef USE_LVGL_UI
+
 #include <lvgl.h>
 
 // Creates the full Stream Deck screen inside the given parent container/screen.
@@ -26,3 +28,5 @@ lv_obj_t* deck_ui_create(lv_obj_t* parent);
 
 // Call periodically (e.g. in your UI loop / timer) to sync UI elements with deck_client state.
 void deck_ui_update();
+
+#endif // USE_LVGL_UI

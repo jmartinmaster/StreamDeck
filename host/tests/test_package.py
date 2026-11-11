@@ -48,7 +48,7 @@ class PackageTests(unittest.TestCase):
             subprocess.run(["dpkg-deb", "--extract", str(package), str(payload)], check=True)
             files = {str(path.relative_to(payload)) for path in payload.rglob("*")
                      if path.is_file()}
-            self.assertEqual(len(files), 16)
+            self.assertEqual(len(files), 17)
             self.assertFalse(any(".venv" in path or "__pycache__" in path for path in files))
             for command in ("deckd", "decktray", "deckd-user"):
                 path = payload / "usr/bin" / command

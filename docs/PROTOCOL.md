@@ -18,6 +18,7 @@ It operates identically across three transport layers:
 |---|---|---|
 | `DECK HELLO` | `v1 <deviceId>` | Handshake initiated by device upon connection. Identifies device. |
 | `DECK PRESS` | `<buttonIndex> <seq>` | Button pressed by user (`buttonIndex` typically 0–15). `seq` is an incrementing sequence number for tracking acknowledgments. |
+| `DECK LAUNCHER PRESS` | `<appIndex> <seq>` | App Launcher grid item pressed by user (`appIndex` 0–71). Host resolves `.desktop` ID cleanly and replies with `DECK ACK <seq>` / `DECK ERR <seq> ...`. |
 | `DECK PAGE NEXT` | *(none)* | Requests next page of buttons for the current profile. |
 | `DECK PAGE PREV` | *(none)* | Requests previous page of buttons for the current profile. |
 | `DECK SELECT\t` | `<profileId>` | Pins a specific profile override (e.g. `DECK SELECT\tcode`). Send empty (`DECK SELECT\t`) to revert to dynamic "Follow focus". |
@@ -43,6 +44,9 @@ It operates identically across three transport layers:
 | `DECK PROFILE ` | `<profileName>` | Name of an available profile. |
 | `DECK PROFILES END` | *(none)* | Finishes transmission of profile catalog. |
 | `DECK SELECTED\t` | `<profileId>` | Notifies device of currently active override. |
+| `DECK LAUNCHER BEGIN\t` | `<autoReturn>\t<count>` | Starts transmission of App Launcher catalog (`autoReturn` is `1` to return to the Stream Deck page after launching or `0` to stay on Launcher; `count` up to 72). |
+| `DECK LAUNCHER ITEM\t` | `<idx>\t<label>\t<icon>\t<color>` | Pushes one App Launcher grid slot (`idx` 0–71) with display label, icon identifier, and semantic/hex color. |
+| `DECK LAUNCHER END` | *(none)* | Commits the staged App Launcher catalog on the device. |
 | `DECK BYE` | `<reason>` | Daemon closing connection or rejecting device (e.g., host busy). |
 
 ---
@@ -66,8 +70,16 @@ sequenceDiagram
     H->>D: DECK ICONS\tcode\tcopy\tpaste...
     H->>D: DECK COLORS\taccent\tidle\tgood...
     H->>D: DECK LAYOUT 1/2\tBuild\tRun\tFormat...
+    H->>D: DECK LAUNCHER BEGIN\t1\t2
+    H->>D: DECK LAUNCHER ITEM\t0\tFirefox\tglobe\taccent
+    H->>D: DECK LAUNCHER ITEM\t1\tFiles\tfolder\taccent
+    H->>D: DECK LAUNCHER END
 
     Note over D: User taps button 0
     D->>H: DECK PRESS 0 1
     H->>D: DECK ACK 1
+
+    Note over D: User opens Launcher and taps item 0
+    D->>H: DECK LAUNCHER PRESS 0 2
+    H->>D: DECK ACK 2
 ```

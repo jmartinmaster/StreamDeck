@@ -151,7 +151,7 @@ Logs: `journalctl --user -u deckd -u decktray`.
 From the source checkout (no root, pip, or network access required):
 
 ```bash
-bash tools/deckd/packaging/build-deb.sh 1.2.1 /path/to/output
+bash host/packaging/build-deb.sh 1.2.1 /path/to/output
 ```
 
 The package contains only the daemon, tray, default profiles, GNOME extension,

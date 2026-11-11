@@ -32,7 +32,7 @@ trap 'rm -rf -- "$STAGE"' EXIT
 
 install -d "$STAGE/DEBIAN" "$STAGE/usr/lib/mmesp32-deckd" \
     "$STAGE/usr/share/mmesp32-deckd" "$STAGE/usr/share/doc/mmesp32-deckd"
-for module in deckd.py deckcontrol.py decktray.py ble_deck.py; do
+for module in deckd.py deckcontrol.py decktray.py ble_deck.py desktop_apps.py; do
     install -m 644 "$SOURCE/$module" "$STAGE/usr/lib/mmesp32-deckd/"
 done
 install -m 644 "$SOURCE/profiles.toml" "$STAGE/usr/share/mmesp32-deckd/"
@@ -50,7 +50,7 @@ install -D -m 644 "$HERE/modules-load.conf" \
     "$STAGE/usr/lib/modules-load.d/mmesp32-deckd.conf"
 EXTENSION="$STAGE/usr/share/gnome-shell/extensions/deckfocus@mmesp32"
 install -d "$EXTENSION"
-install -m 644 "$SOURCE/../gnome-extension/deckfocus@mmesp32/"{extension.js,metadata.json} "$EXTENSION/"
+install -m 644 "$SOURCE/gnome-extension/deckfocus@mmesp32/"{extension.js,metadata.json} "$EXTENSION/"
 install -m 644 "$HERE/README.md" "$STAGE/usr/share/doc/mmesp32-deckd/README.md"
 install -m 755 "$HERE/postinst" "$STAGE/DEBIAN/postinst"
 cat > "$STAGE/DEBIAN/control" <<EOF

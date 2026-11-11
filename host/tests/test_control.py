@@ -92,18 +92,28 @@ async def control_client_checks(control):
         await iface.call_set_override("")
         assert control.override() == ""
 
-        # BLE toggle round-trip.
+        # Default IDLE transport state & round-trips (BLE / USB / WiFi).
+        assert status["ble"] == "0" and status["usb"] == "0" and status["wifi"] == "0", status
         assert control.ble_enabled() is False
+        assert control.usb_enabled() is False
+        assert control.wifi_enabled() is False
+
         await iface.call_set_ble_enabled(True)
         assert control.ble_enabled() is True
         await iface.call_set_ble_enabled(False)
         assert control.ble_enabled() is False
-        await iface.call_set_usb_enabled(False)
-        assert control.usb_enabled() is False
-        assert control.status()["usb"] == "0"
+
         await iface.call_set_usb_enabled(True)
         assert control.usb_enabled() is True
         assert control.status()["usb"] == "1"
+        await iface.call_set_usb_enabled(False)
+        assert control.usb_enabled() is False
+        assert control.status()["usb"] == "0"
+
+        await iface.call_set_wifi_enabled(True)
+        assert control.wifi_enabled() is True
+        await iface.call_set_wifi_enabled(False)
+        assert control.wifi_enabled() is False
     finally:
         bus.disconnect()
 
@@ -201,8 +211,59 @@ def test_ble_manager_reconcile():
             deckd.BleListener = blecls
     print("PASS BLE manager reconcile (runtime enable/disable/re-enable)")
 
+def test_wifi_manager_reconcile():
+    """WifiManager starts/stops TcpListener + MdnsAdvertiser to match control toggle."""
+    events = []
+
+    class StubTcp:
+        def __init__(self, port):
+            self.port = port
+            events.append(("tcp_create", port))
+
+        def close(self):
+            events.append(("tcp_close", self.port))
+
+    class StubMdns:
+        def __init__(self, port):
+            self.port = port
+            events.append(("mdns_create", port))
+
+        def close(self):
+            events.append(("mdns_close", self.port))
+
+    control = DeckControl(make_profiles(), bus_name=TEST_BUS_NAME + ".W")
+    orig_tcp, orig_mdns = deckd.TcpListener, deckd.MdnsAdvertiser
+    deckd.TcpListener = StubTcp
+    deckd.MdnsAdvertiser = StubMdns
+    try:
+        manager = deckd.WifiManager(control, port=4650, mdns=True)
+        manager.reconcile()
+        assert events == [] and manager.listener is None
+
+        control.set_wifi_enabled(True)
+        manager.reconcile()
+        assert events == [("tcp_create", 4650), ("mdns_create", 4650)], events
+        assert control.status()["wifi"] == "1"
+        manager.reconcile()  # steady state
+        assert len(events) == 2
+
+        control.set_wifi_enabled(False)
+        manager.reconcile()
+        assert events == [
+            ("tcp_create", 4650), ("mdns_create", 4650),
+            ("mdns_close", 4650), ("tcp_close", 4650),
+        ], events
+        assert manager.listener is None
+        assert control.status()["wifi"] == "0"
+        manager.close()
+    finally:
+        deckd.TcpListener, deckd.MdnsAdvertiser = orig_tcp, orig_mdns
+    print("PASS WiFi manager reconcile (runtime enable/disable)")
+
+
 def test_usb_release():
-    control = DeckControl(make_profiles(), ble_enabled=True)
+    control = DeckControl(make_profiles(), ble_enabled=True, usb_enabled=True,
+                          wifi_enabled=True)
     port = Mock()
     port.read.return_value = b""
     port.write.side_effect = lambda _: control.set_usb_enabled(False)
@@ -216,18 +277,33 @@ def test_usb_release():
         raise AssertionError("USB session did not exit")
     port.read.assert_not_called()
     assert control.ble_enabled(), "USB release disabled BLE"
+    assert control.wifi_enabled(), "USB release disabled WiFi"
 
     # Wireless sessions continue to process a heartbeat with USB released.
     wireless = deckd.DeckSession(Mock(), make_profiles(), Mock(),
                                  control=control, transport_name="ble")
     wireless.handle_line("DECK PING abc")
     wireless.port.write.assert_called_with(b"DECK PONG abc\n")
-    print("PASS USB release exits USB session and preserves BLE")
+
+    # Disabling WiFi also cleanly terminates an active WiFi session.
+    wifi_port = Mock()
+    wifi_port.read.return_value = b""
+    wifi_port.write.side_effect = lambda _: control.set_wifi_enabled(False)
+    wifi_sess = deckd.DeckSession(wifi_port, make_profiles(), Mock(),
+                                  control=control, transport_name="wifi")
+    try:
+        deckd.pump_session(wifi_sess)
+    except ConnectionError as error:
+        assert str(error) == "WiFi disabled by user"
+    else:
+        raise AssertionError("WiFi session did not exit")
+    print("PASS USB/WiFi release exits matching session cleanly")
 
 
 if __name__ == "__main__":
     test_control_interface()
     test_session_override()
     test_ble_manager_reconcile()
+    test_wifi_manager_reconcile()
     test_usb_release()
     print("ALL TESTS PASSED")

@@ -25,9 +25,9 @@
 // Stream Deck Configuration & Build Options
 // =============================================================================
 
-// Transport selection:
-// 1 = Bluetooth Low Energy (NimBLE Client -> deckd NUS GATT Server)
-// 0 = USB Serial / Hardware Serial CDC
+// Transport capabilities:
+// 1 = Bluetooth Low Energy enabled alongside USB Serial and Wi-Fi TCP
+// 0 = USB Serial and Wi-Fi TCP only (NimBLE library omitted)
 #ifndef DECK_TRANSPORT_BLE
 #define DECK_TRANSPORT_BLE 1
 #endif
@@ -37,9 +37,23 @@
 #define DECK_MAX_BUTTONS 16
 #endif
 
+// Max number of launcher apps synced from host and buttons per launcher page (3 x 8)
+#ifndef DECK_MAX_LAUNCHER_APPS
+#define DECK_MAX_LAUNCHER_APPS 72
+#endif
+
+#ifndef DECK_LAUNCHER_PAGE_SIZE
+#define DECK_LAUNCHER_PAGE_SIZE 24
+#endif
+
 // Maximum characters per button label
 #ifndef DECK_MAX_LABEL_LEN
 #define DECK_MAX_LABEL_LEN 20
+#endif
+
+// NVS namespace for persisted transport & Wi-Fi host preferences
+#ifndef DECK_NVS_NS
+#define DECK_NVS_NS "deck_cfg"
 #endif
 
 // Device identifier sent in DECK HELLO v1 <id>

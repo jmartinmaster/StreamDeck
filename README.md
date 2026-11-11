@@ -19,7 +19,7 @@ No external cloud services, bridges, or Raspberry Pi servers are required. The d
   * **Host → Device:** Streams active window titles, group headers, button labels, icons, semantic color codes, and multi-page numbers.
   * **Device → Host:** Sends button presses with sequential tracking; the host confirms dispatch with `DECK ACK` or reports errors with `DECK ERR`.
 * **Multi-Computer Scanning:** If you run the daemon on multiple computers (e.g., desktop and laptop), tap **Scan** on the device to discover all nearby hosts (`DeckD-<hostname>`) and switch target machines on the fly.
-* **Multi-Page Grids:** Supports multiple pages (`<` / `>`) for applications with more actions than available physical buttons.
+* **Multi-Page Grids & Portable App Launcher:** Supports multiple macro pages (`<` / `>`) plus a dedicated **App Launcher** grid (up to 72 apps, 24 per page) populated automatically from standard Linux `.desktop` files or customized via `deckgui`, with a `< Back` button and optional auto-return after launching.
 * **Profile Overrides:** Easily toggle between dynamic **Follow focus** and pinning a specific app layout using the touchscreen dropdown or the PC system tray applet.
 * **System Tray Applet (`decktray`):** Pure D-Bus `StatusNotifierItem` tray icon (GTK-free to guarantee crash-free operation on Wayland).
 * **Visual Profile & Macro Editor (`deckgui`):** Full PySide6/Qt desktop configurator with an interactive 16-button preview, live keyboard shortcut recorder, and syntax-highlighted TOML editor.
@@ -73,6 +73,7 @@ Stream_Deck/
 │   └── HARDWARE_GUIDE.md          # Wiring, display setup, and board porting notes
 ├── host/                          # Linux host daemon, tray, GUI, and services
 │   ├── deckd.py                   # Core background daemon
+│   ├── desktop_apps.py            # Portable Linux XDG .desktop app discovery & launch helpers
 │   ├── ble_deck.py                # BlueZ BLE GATT server (NUS profile)
 │   ├── decktray.py                # System tray status applet (pure D-Bus)
 │   ├── deckgui.py                 # PySide6 visual configuration editor
@@ -125,7 +126,7 @@ Stream_Deck/
 
 1. **Navigate to the host directory and run the installer:**
    ```bash
-   cd /home/jamie/Documents/Github/Stream_Deck/host
+   cd host
    chmod +x install.sh
    ./install.sh
    ```
@@ -172,7 +173,7 @@ Stream_Deck/
 The `firmware/` directory contains a modular PlatformIO project configured for three modes:
 
 ```bash
-cd /home/jamie/Documents/Github/Stream_Deck/firmware
+cd firmware
 ```
 
 #### Environment 1: ESP32-S3 Capacitive Touchscreen (Recommended)
@@ -197,7 +198,7 @@ pio run -e esp32_serial -t upload
 * **What happens:** Communicates directly over USB serial at 115200 baud. You can monitor and test commands interactively:
   ```bash
   pio device monitor -b 115200
-  # Type: press 0, press 1, next, prev, scan
+  # Type: press 0, press 1, launcher 0, next, prev, scan, status
   ```
 
 #### Testing the Firmware Parser Locally
@@ -265,6 +266,19 @@ b4 = { label = "Git Commit",      icon = "ok",       color = "good",   action = 
   * `cmd:systemctl suspend`
   * `cmd:spotify`
 * `page:next` / `page:prev`: Navigates through multi-page layouts.
+* `app = "<desktop_id>"` (or `shell = "..."` / `keys = "..."` in grouped profiles): Launches an installed Linux application discovered via standard XDG `.desktop` directories (`/usr/share/applications`, `~/.local/share/applications`, Flatpak, Snap) — e.g. `app = "firefox.desktop"`.
+
+### App Launcher Configuration (`[launcher]`)
+When `[launcher]` is omitted or `apps` is empty, `deckd` automatically curates sensible default applications installed on the current Linux host. Customize the launcher grid manually or via the **App Launcher** tab in `deckgui`:
+
+```toml
+[launcher]
+auto_return = true   # true: return to Stream Deck page after launching; false: stay until < Back
+apps = [
+    { id = "firefox.desktop", label = "Firefox", icon = "globe", color = "accent" },
+    { id = "org.gnome.Terminal.desktop", label = "Terminal", icon = "terminal", color = "good" },
+]
+```
 
 ### Built-in Semantic Colors
 * `accent` (Cyan / Light Blue)
@@ -291,14 +305,15 @@ The tray applet sits in your top bar and gives instant status:
 Run `./.venv/bin/python deckgui.py` to open the visual suite:
 1. **Interactive Grid:** View and click your 16 buttons with real colors and icons as they appear on the device.
 2. **Page Navigator:** Easily switch between button groups and pages.
-3. **Shortcut Recorder:** Click a button to open the action editor, press your keyboard hotkey to record it, pick an icon from the catalog, and pick a semantic color.
-4. **Direct TOML Editor:** Edit the configuration file with syntax highlighting and instant structural validation.
+3. **Shortcut Recorder & App Picker:** Click a button to assign a recorded keyboard shortcut, a shell command, or an installed `.desktop` application, pick an icon, and pick a semantic color.
+4. **App Launcher Tab:** Curate the device's App Launcher grid from installed Linux applications, populate smart defaults, and toggle whether launching an app automatically returns to the Stream Deck page.
+5. **Direct TOML Editor:** Edit the configuration file with syntax highlighting and instant structural validation.
 
 ### On-Device Controls (Touchscreen)
 * **Active App Banner:** The header shows the current active application and window title.
 * **Host Dropdown:** Displays connected host identity; tap **Scan** to search for nearby computers.
 * **Profile Dropdown:** Select **Follow focus** or pin any profile directly from the screen.
-* **Page Buttons (`<` / `>`):** Switch between button pages for the current profile.
+* **Page Buttons (`<` / `>`) & Launcher Button:** Switch between button pages for the current profile, or tap **Launcher** directly below the pager buttons to open the paginated App Launcher grid (always includes a `< Back` button).
 * **Feedback Line:** Confirms actions dispatched to the host or displays errors if an action times out.
 
 ---
@@ -342,5 +357,5 @@ Run `./.venv/bin/python deckgui.py` to open the visual suite:
 ---
 
 ## Additional Documentation
-* **[Protocol Specification (`docs/PROTOCOL.md`)](file:///home/jamie/Documents/Github/Stream_Deck/docs/PROTOCOL.md):** Detailed reference for the line-based `DECK` protocol.
-* **[Hardware Porting Guide (`docs/HARDWARE_GUIDE.md`)](file:///home/jamie/Documents/Github/Stream_Deck/docs/HARDWARE_GUIDE.md):** Pin definitions, display controllers, and physical button wiring.
+* **[Protocol Specification (`docs/PROTOCOL.md`)](docs/PROTOCOL.md):** Detailed reference for the line-based `DECK` protocol.
+* **[Hardware Porting Guide (`docs/HARDWARE_GUIDE.md`)](docs/HARDWARE_GUIDE.md):** Pin definitions, display controllers, and physical button wiring.

@@ -72,6 +72,9 @@ STATUS_USB = {
     "focus_app": "org.gnome.TextEditor",
     "focus_title": "notes.txt - Text Editor",
     "connected": "1",
+    "usb": "1",
+    "wifi": "0",
+    "ble": "0",
 }
 
 TIMEOUT = 5.0
@@ -121,6 +124,8 @@ class FakeDeckd(ServiceInterface):
         self.status = dict(STATUS_USB)
         self.usb_calls = []
         self.usb_called = asyncio.Event()
+        self.wifi_calls = []
+        self.wifi_called = asyncio.Event()
 
     @method()
     def ListProfiles(self) -> "as":
@@ -141,6 +146,13 @@ class FakeDeckd(ServiceInterface):
         self.status["usb"] = "1" if enabled else "0"
         self.StatusChanged(dict(self.status))
         self.usb_called.set()
+
+    @method()
+    def SetWifiEnabled(self, enabled: "b"):
+        self.wifi_calls.append(enabled)
+        self.status["wifi"] = "1" if enabled else "0"
+        self.StatusChanged(dict(self.status))
+        self.wifi_called.set()
 
     @dbus_signal()
     def StatusChanged(self, status: "a{ss}") -> "a{ss}":
@@ -295,6 +307,16 @@ async def amain():
         await click(client_bus, tray, decktray.MI_USB)
         await wait_for(deckd.usb_called, "USB resume")
         check(deckd.usb_calls == [False, True], "USB toggle resumes serial polling")
+
+        await click(client_bus, tray, decktray.MI_WIFI)
+        await wait_for(deckd.wifi_called, "WiFi enable")
+        check(deckd.wifi_calls == [True], "WiFi toggle enables WiFi listener")
+        await app.refresh_from_daemon()
+        deckd.wifi_called.clear()
+        await click(client_bus, tray, decktray.MI_WIFI)
+        await wait_for(deckd.wifi_called, "WiFi disable")
+        check(deckd.wifi_calls == [False] or deckd.wifi_calls == [True, False],
+              "WiFi toggle disables WiFi listener")
 
         # (d) StatusChanged updates the layout ----------------------------
         print("[4] StatusChanged -> LayoutUpdated + new layout")

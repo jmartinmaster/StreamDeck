@@ -29,6 +29,12 @@ enum DeckLinkState {
     DECK_LINK_CONNECTED
 };
 
+enum DeckTransport {
+    DECK_MODE_USB = 0,
+    DECK_MODE_WIFI = 1,
+    DECK_MODE_BLE = 2
+};
+
 struct DeckButtonInfo {
     char label[DECK_MAX_LABEL_LEN];
     char icon[16];
@@ -54,19 +60,38 @@ struct DeckClientState {
     bool actionPending;
 };
 
+struct DeckLauncherState {
+    DeckButtonInfo items[DECK_MAX_LAUNCHER_APPS];
+    uint8_t count;
+    bool autoReturn;
+    bool ready;
+    bool dirty;
+};
+
 // Lifecycle
 void deck_client_init();
 void deck_client_start();
 void deck_client_stop();
 void deck_client_loop();
+void deck_client_handle_serial_line(const String& line);
+
+// Transport configuration (persisted in NVS)
+DeckTransport deck_client_get_transport();
+bool deck_client_set_transport(DeckTransport transport);
+bool deck_client_ble_initialized();
+const char* deck_client_get_wifi_host();
+void deck_client_set_wifi_host(const char* host);
 
 // State querying
 const DeckClientState& deck_client_get_state();
+const DeckLauncherState& deck_client_get_launcher();
 bool deck_client_is_connected();
 bool deck_client_controls_ready();
+bool deck_client_launcher_ready();
 
 // Actions
 bool deck_client_send_press(uint8_t buttonIndex);
+bool deck_client_send_launcher_press(uint8_t appIndex);
 bool deck_client_send_page_next();
 bool deck_client_send_page_prev();
 bool deck_client_select_profile(const char* profile);

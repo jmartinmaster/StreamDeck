@@ -22,9 +22,9 @@ com.canonical.dbusmenu using dbus-next (no GTK/GObject imports -- GTK3
 crashes on this host). The GNOME ubuntu-appindicators extension consumes
 both protocols.
 
-Run with the deckd venv python:
+Run with the Stream Deck venv python:
 
-    tools/deckd/.venv/bin/python tools/deckd/decktray.py
+    .venv/bin/python decktray.py
 
 Talks to the deckd daemon control interface (org.mmesp32.Deckd1) to show
 live status and let the user pin a profile override. Survives daemon and
@@ -37,8 +37,10 @@ watcher restarts without crashing.
 
 import argparse
 import asyncio
+import json
 import logging
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -69,6 +71,7 @@ FOCUS_TITLE_MAX = 40
 
 PROFILES_TOML = Path(os.environ.get(
     "DECKD_PROFILES", str(Path(__file__).resolve().parent / "profiles.toml")))
+SETTINGS_JSON = Path.home() / ".config" / "deckd" / "settings.json"
 
 # Stable menu item ids
 MI_STATUS = 1
@@ -80,8 +83,20 @@ MI_EDIT = 6
 MI_QUIT = 7
 MI_BLE = 8
 MI_USB = 9
+MI_WIFI = 98
 MI_SYNC = 99
 MI_PROFILE_BASE = 10  # profile i -> menu id MI_PROFILE_BASE + i
+
+
+def _load_post_save_command():
+    """Return user-configured post-save sync command from local settings, if any."""
+    if not SETTINGS_JSON.is_file():
+        return ""
+    try:
+        data = json.loads(SETTINGS_JSON.read_text(encoding="utf-8"))
+        return str(data.get("post_save_command", "")).strip()
+    except Exception:
+        return ""
 
 TRANSPORT_LABELS = {"usb": "USB", "wifi": "WiFi", "ble": "BLE",
                     "none": "No device"}
@@ -139,7 +154,7 @@ class DBusMenu(ServiceInterface):
 
         items.append((MI_SEP2, {"type": "separator"}))
         items.append((MI_BLE, {
-            "label": "BLE connections (P4/S3 panels)",
+            "label": "BLE connections (wireless GATT)",
             "toggle-type": "checkmark",
             "toggle-state": 1 if app.status.get("ble", "0") == "1" else 0,
             "enabled": app.daemon_online,
@@ -147,11 +162,18 @@ class DBusMenu(ServiceInterface):
         items.append((MI_USB, {
             "label": "USB connections (uncheck to release port)",
             "toggle-type": "checkmark",
-            "toggle-state": 1 if app.status.get("usb", "1") == "1" else 0,
+            "toggle-state": 1 if app.status.get("usb", "0") == "1" else 0,
+            "enabled": app.daemon_online,
+        }))
+        items.append((MI_WIFI, {
+            "label": "WiFi connections (TCP/mDNS listener)",
+            "toggle-type": "checkmark",
+            "toggle-state": 1 if app.status.get("wifi", "0") == "1" else 0,
             "enabled": app.daemon_online,
         }))
         items.append((MI_EDIT, {"label": "Edit profiles\u2026"}))
-        items.append((MI_SYNC, {"label": "Sync to Pi Gateway"}))
+        if _load_post_save_command():
+            items.append((MI_SYNC, {"label": "Run sync hook"}))
         items.append((MI_QUIT, {"label": "Quit tray"}))
         return items
 
@@ -444,8 +466,13 @@ class TrayApp:
     def status_line(self):
         if not self.daemon_online:
             return "daemon offline"
-        transport = TRANSPORT_LABELS.get(
-            self.status.get("transport", "none"), "?")
+        transport_key = self.status.get("transport", "none")
+        if (transport_key == "none"
+                and self.status.get("usb", "0") == "0"
+                and self.status.get("wifi", "0") == "0"
+                and self.status.get("ble", "0") == "0"):
+            return "Idle \u00b7 choose connection"
+        transport = TRANSPORT_LABELS.get(transport_key, "?")
         profile = self.status.get("active_profile", "?") or "?"
         return f"{transport} \u00b7 {profile}"
 
@@ -620,17 +647,20 @@ class TrayApp:
         except OSError as exc:
             log.error("Failed to launch deckgui: %s", exc)
 
-    async def sync_gateway(self):
+    async def run_sync_hook(self):
+        raw_cmd = _load_post_save_command()
+        if not raw_cmd:
+            return
+        cmd_str = raw_cmd.replace("{profiles}", shlex.quote(str(PROFILES_TOML)))
         try:
-            cmd = ["scp", "-q", str(PROFILES_TOML), "100.92.127.16:Documents/Github/ESP32-S3-HomeServer/pi_gateway/deck_profiles.toml"]
-            proc = await asyncio.create_subprocess_exec(*cmd)
-            await proc.wait()
-            cmd2 = ["ssh", "100.92.127.16", "systemctl --user restart esp-gateway"]
-            proc2 = await asyncio.create_subprocess_exec(*cmd2)
-            await proc2.wait()
-            log.info("Synced profiles to Pi Gateway")
+            proc = await asyncio.create_subprocess_shell(cmd_str)
+            rc = await proc.wait()
+            if rc != 0:
+                log.error("Sync hook exited with code %d", rc)
+            else:
+                log.info("Sync hook completed")
         except Exception as exc:
-            log.error("Sync to Pi Gateway failed: %s", exc)
+            log.error("Sync hook failed: %s", exc)
 
     async def handle_click(self, item_id):
         if item_id == MI_QUIT:
@@ -640,30 +670,31 @@ class TrayApp:
             self.open_gui()
             return
         if item_id == MI_SYNC:
-            self.schedule(self.sync_gateway())
+            self.schedule(self.run_sync_hook())
             return
         if item_id == MI_AUTO:
             await self._set_override("")
             return
-        if item_id == MI_BLE:
-            enable = self.status.get("ble", "0") != "1"
-            try:
-                await self._deckd_call("SetBleEnabled", "b", [enable])
-            except Exception as exc:
-                log.warning("SetBleEnabled(%r) failed: %s", enable, exc)
-                self._set_offline()
-            return
-        if item_id == MI_USB:
-            enable = self.status.get("usb", "1") != "1"
-            try:
-                await self._deckd_call("SetUsbEnabled", "b", [enable])
-            except Exception as exc:
-                log.warning("SetUsbEnabled(%r) failed: %s", enable, exc)
-                self._set_offline()
+        transport_toggles = {
+            MI_BLE: ("ble", "SetBleEnabled"),
+            MI_USB: ("usb", "SetUsbEnabled"),
+            MI_WIFI: ("wifi", "SetWifiEnabled"),
+        }
+        if item_id in transport_toggles:
+            key, method = transport_toggles[item_id]
+            await self._toggle_transport(key, method)
             return
         idx = item_id - MI_PROFILE_BASE
         if 0 <= idx < len(self.profiles):
             await self._set_override(self.profiles[idx])
+
+    async def _toggle_transport(self, key, method):
+        enable = self.status.get(key, "0") != "1"
+        try:
+            await self._deckd_call(method, "b", [enable])
+        except Exception as exc:
+            log.warning("%s(%r) failed: %s", method, enable, exc)
+            self._set_offline()
 
     async def _set_override(self, profile):
         try:

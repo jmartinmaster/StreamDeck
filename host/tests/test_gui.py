@@ -35,11 +35,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from qtpy import QtWidgets
-try:
-    from deckgui import DeckMainWindow, load_settings, save_settings, SEMANTIC_COLORS, format_shortcut_badge
-except ImportError:
-    from tools.deckd.deckgui import DeckMainWindow, load_settings, save_settings, SEMANTIC_COLORS
-    from tools.deckd.deckgui import format_shortcut_badge
+import deckgui
+from deckgui import (
+    AppPickerDialog,
+    DeckMainWindow,
+    SEMANTIC_COLORS,
+    format_shortcut_badge,
+    load_settings,
+    save_settings,
+)
+from desktop_apps import DesktopApp
 
 
 SAMPLE_TOML = """
@@ -79,8 +84,11 @@ class TestDeckGui(unittest.TestCase):
         self.tmp_dir = tempfile.TemporaryDirectory()
         self.profiles_path = Path(self.tmp_dir.name) / "profiles.toml"
         self.profiles_path.write_text(SAMPLE_TOML, encoding="utf-8")
+        self._orig_settings_file = deckgui.SETTINGS_FILE
+        deckgui.SETTINGS_FILE = Path(self.tmp_dir.name) / "settings.json"
 
     def tearDown(self):
+        deckgui.SETTINGS_FILE = self._orig_settings_file
         self.tmp_dir.cleanup()
 
     def test_load_and_parse_profiles(self):
@@ -215,6 +223,107 @@ class TestDeckGui(unittest.TestCase):
         with open(self.profiles_path, "rb") as f:
             saved = tomllib.load(f)
         self.assertEqual(len(saved["app"]["default"]["groups"]), 4)
+
+    def test_idle_status_opens_choose_connection_tab_and_selects_modes(self):
+        from unittest.mock import Mock
+
+        win = DeckMainWindow(profiles_path=self.profiles_path)
+        win.dbus_iface = Mock()
+
+        win._connect_tab_auto_checked = False
+        win.tabs.setCurrentIndex(0)
+        win.apply_deckd_status({
+            "transport": "none",
+            "active_profile": "default",
+            "override": "",
+            "focus_app": "",
+            "focus_title": "",
+            "connected": "0",
+            "usb": "0",
+            "wifi": "0",
+            "ble": "0",
+        })
+        self.assertEqual(win.tabs.currentIndex(), win.connect_tab_index)
+        self.assertFalse(win.chk_usb.isChecked())
+        self.assertFalse(win.chk_wifi.isChecked())
+        self.assertFalse(win.chk_ble.isChecked())
+        self.assertIn("IDLE", win.lbl_connect_state.text())
+
+        win.dbus_iface.call.reset_mock()
+        win.select_connection_mode("wifi")
+        calls = [c.args for c in win.dbus_iface.call.call_args_list if c.args[0].startswith("Set")]
+        self.assertEqual(calls, [
+            ("SetUsbEnabled", False),
+            ("SetWifiEnabled", True),
+            ("SetBleEnabled", False),
+        ])
+
+        win.dbus_iface.call.reset_mock()
+        win.select_connection_mode("usb")
+        calls = [c.args for c in win.dbus_iface.call.call_args_list if c.args[0].startswith("Set")]
+        self.assertEqual(calls, [
+            ("SetUsbEnabled", True),
+            ("SetWifiEnabled", False),
+            ("SetBleEnabled", False),
+        ])
+
+    def test_launch_app_inspector_and_badge(self):
+        self.assertEqual(format_shortcut_badge({"app": "org.gnome.Calculator.desktop"}), "APP")
+        win = DeckMainWindow(profiles_path=self.profiles_path)
+        win.current_app_id = "default"
+        win.render_current_profile()
+        win.select_button(3)
+        win.ins_action_type.setCurrentIndex(2)
+        win.ins_action_val.setText("firefox.desktop")
+        win.ins_label.setText("Browser")
+        win.on_inspector_changed()
+        data = win.get_button_data(3)
+        self.assertEqual(data.get("app"), "firefox.desktop")
+        self.assertNotIn("keys", data)
+        self.assertNotIn("shell", data)
+        self.assertIn("installed Linux app", win.lbl_shortcut_valid.text())
+
+    def test_launcher_tab_add_reorder_auto_return_and_save(self):
+        sample_apps = [
+            DesktopApp("firefox.desktop", "Firefox", "firefox %u", "Web Browser", categories=("Network", "WebBrowser")),
+            DesktopApp("org.gnome.Calculator.desktop", "Calculator", "gnome-calculator", "Math", categories=("Utility",)),
+        ]
+        orig_discover = deckgui.discover_desktop_apps
+        orig_suggest = deckgui.suggest_smart_defaults
+        deckgui.discover_desktop_apps = lambda: sample_apps
+        deckgui.suggest_smart_defaults = lambda apps: [{"id": "firefox.desktop", "label": "Firefox", "icon": "globe", "color": "accent"}]
+        try:
+            win = DeckMainWindow(profiles_path=self.profiles_path)
+            self.assertEqual(win.list_launcher_available.count(), 2)
+            self.assertEqual(win.list_launcher_selected.count(), 1)
+            self.assertTrue(win.chk_launcher_auto_return.isChecked())
+
+            # Select Calculator in available list and add it
+            win.list_launcher_available.setCurrentRow(1)
+            win.add_selected_to_launcher()
+            self.assertEqual(win.list_launcher_selected.count(), 2)
+
+            # Toggle auto_return off and move second item up
+            win.chk_launcher_auto_return.setChecked(False)
+            win.list_launcher_selected.setCurrentRow(1)
+            win.move_launcher_item(-1)
+            win.save_and_apply()
+
+            with open(self.profiles_path, "rb") as f:
+                saved = tomllib.load(f)
+            self.assertFalse(saved["launcher"]["auto_return"])
+            self.assertEqual([a["id"] for a in saved["launcher"]["apps"]], [
+                "org.gnome.Calculator.desktop",
+                "firefox.desktop",
+            ])
+
+            # Also verify AppPickerDialog filters properly
+            dlg = AppPickerDialog(sample_apps, win)
+            dlg.edit_search.setText("calc")
+            self.assertEqual(dlg.list_apps.count(), 1)
+        finally:
+            deckgui.discover_desktop_apps = orig_discover
+            deckgui.suggest_smart_defaults = orig_suggest
 
 
 if __name__ == "__main__":

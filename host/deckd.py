@@ -15,15 +15,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Stream Deck.  If not, see <https://www.gnu.org/licenses/>.
-"""deckd - local Stream Deck daemon for the MMEsp32 PDA.
+"""deckd - local Stream Deck daemon.
 
-Connects to the PDA over USB serial (preferred) or accepts a device-initiated
-WiFi TCP connection (advertised via mDNS as ``_mmdeckd._tcp``), pushes button
-layouts from profiles.toml, and executes shortcuts or shell commands when the
-device reports a button press. Only one session is active at a time; USB wins.
-
-Protocol: newline-delimited text, "DECK ..." namespace. See
-STREAMDECK_PLAN.md at the repository root.
+Connects to the deck over USB serial, WiFi TCP (advertised via mDNS as
+``_mmdeckd._tcp``), or Bluetooth LE (NUS GATT), pushes button layouts and
+launcher apps from profiles.toml, and executes shortcuts, shell commands, or
+XDG desktop applications when the device reports a button press.
 """
 
 from __future__ import annotations
@@ -44,6 +41,27 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import serial
+
+try:
+    from desktop_apps import (
+        DesktopApp,
+        discover_desktop_apps,
+        guess_deck_icon,
+        launch_desktop_app,
+        normalize_desktop_id,
+        short_label,
+        suggest_smart_defaults,
+    )
+except ImportError:  # pragma: no cover - package import fallback
+    from .desktop_apps import (  # type: ignore[no-redef]
+        DesktopApp,
+        discover_desktop_apps,
+        guess_deck_icon,
+        launch_desktop_app,
+        normalize_desktop_id,
+        short_label,
+        suggest_smart_defaults,
+    )
 
 try:
     from evdev import UInput, ecodes
@@ -194,13 +212,23 @@ class KeyInjector:
         self._uinput.syn()
 
 
+MAX_LAUNCHER_APPS = 72
+
+
 @dataclass
 class Button:
     label: str
     keys: str | None = None
     shell: str | None = None
+    app: str | None = None
     icon: str | None = None
     color: str | None = None
+
+
+@dataclass
+class LauncherConfig:
+    apps: list[Button] = field(default_factory=list)
+    auto_return: bool = True
 
 
 @dataclass
@@ -243,7 +271,72 @@ class Profile:
         return self.buttons[start : start + PAGE_SIZE]
 
 
-def load_profiles(path: Path) -> dict[str, Profile]:
+def _button_from_entry(entry: dict, default_color: str | None = None) -> Button:
+    return Button(
+        label=str(entry.get("label", "?"))[:13],
+        keys=entry.get("keys"),
+        shell=entry.get("shell"),
+        app=entry.get("app"),
+        icon=entry.get("icon"),
+        color=entry.get("color") or default_color,
+    )
+
+
+def _resolve_launcher_config(raw: dict) -> LauncherConfig:
+    section = raw.get("launcher")
+    discovered: list[DesktopApp] | None = None
+    by_id: dict[str, DesktopApp] | None = None
+
+    def get_apps() -> tuple[list[DesktopApp], dict[str, DesktopApp]]:
+        nonlocal discovered, by_id
+        if discovered is None:
+            discovered = discover_desktop_apps()
+            by_id = {a.desktop_id: a for a in discovered}
+        assert by_id is not None
+        return discovered, by_id
+
+    if not isinstance(section, dict) or ("apps" not in section and not section.get("configured")):
+        auto_ret = True if not isinstance(section, dict) else bool(section.get("auto_return", True))
+        apps, _ = get_apps()
+        defaults = suggest_smart_defaults(apps)
+        buttons = [
+            Button(
+                label=entry["label"][:13],
+                app=entry["id"],
+                icon=entry.get("icon"),
+                color=entry.get("color", "accent"),
+            )
+            for entry in defaults[:MAX_LAUNCHER_APPS]
+        ]
+        return LauncherConfig(apps=buttons, auto_return=auto_ret)
+
+    auto_ret = bool(section.get("auto_return", True))
+    raw_apps = section.get("apps", [])
+    buttons: list[Button] = []
+    if raw_apps:
+        _, app_map = get_apps()
+        for entry in raw_apps[:MAX_LAUNCHER_APPS]:
+            if isinstance(entry, str):
+                entry = {"id": entry}
+            desktop_id = normalize_desktop_id(str(entry.get("id") or entry.get("app") or ""))
+            meta = app_map.get(desktop_id)
+            raw_label = str(entry.get("label", "")).strip()
+            if not raw_label:
+                raw_label = short_label(meta.name) if meta else desktop_id[:-8]
+            icon = entry.get("icon") or (guess_deck_icon(meta) if meta else "app")
+            color = entry.get("color") or "accent"
+            buttons.append(Button(
+                label=raw_label[:13],
+                app=desktop_id or None,
+                shell=entry.get("shell"),
+                keys=entry.get("keys"),
+                icon=icon,
+                color=color,
+            ))
+    return LauncherConfig(apps=buttons, auto_return=auto_ret)
+
+
+def load_profiles_and_launcher(path: Path) -> tuple[dict[str, Profile], LauncherConfig]:
     with path.open("rb") as handle:
         raw = tomllib.load(handle)
     profiles: dict[str, Profile] = {}
@@ -251,13 +344,7 @@ def load_profiles(path: Path) -> dict[str, Profile]:
         groups: list[Group] = []
         for g_entry in body.get("groups", []):
             g_buttons = [
-                Button(
-                    label=str(entry.get("label", "?"))[:13],
-                    keys=entry.get("keys"),
-                    shell=entry.get("shell"),
-                    icon=entry.get("icon"),
-                    color=entry.get("color") or g_entry.get("color"),
-                )
+                _button_from_entry(entry, g_entry.get("color"))
                 for entry in g_entry.get("buttons", [])
             ]
             groups.append(Group(
@@ -266,16 +353,7 @@ def load_profiles(path: Path) -> dict[str, Profile]:
                 color=g_entry.get("color"),
             ))
 
-        buttons = [
-            Button(
-                label=str(entry.get("label", "?"))[:13],
-                keys=entry.get("keys"),
-                shell=entry.get("shell"),
-                icon=entry.get("icon"),
-                color=entry.get("color"),
-            )
-            for entry in body.get("buttons", [])
-        ]
+        buttons = [_button_from_entry(entry) for entry in body.get("buttons", [])]
         if groups and not buttons:
             flat: list[Button] = []
             for g in groups:
@@ -290,7 +368,14 @@ def load_profiles(path: Path) -> dict[str, Profile]:
         )
     if "default" not in profiles:
         profiles["default"] = Profile(app_id="default")
-    log.info("loaded %d profile(s) from %s", len(profiles), path)
+    launcher = _resolve_launcher_config(raw)
+    log.info("loaded %d profile(s) and %d launcher app(s) from %s",
+             len(profiles), len(launcher.apps), path)
+    return profiles, launcher
+
+
+def load_profiles(path: Path) -> dict[str, Profile]:
+    profiles, _ = load_profiles_and_launcher(path)
     return profiles
 
 
@@ -298,15 +383,11 @@ PROFILE_RELOAD_INTERVAL = 2.0
 
 
 class ProfileStore:
-    """Holds the shared profiles dict and hot-reloads it when the file changes.
-
-    The dict object is mutated in place so every live/future session sees
-    updates immediately.
-    """
+    """Holds the shared profiles dict and launcher config, hot-reloading on change."""
 
     def __init__(self, path: Path) -> None:
         self.path = path
-        self.profiles = load_profiles(path)
+        self.profiles, self.launcher = load_profiles_and_launcher(path)
         self._mtime = self._stat()
         self._last_check = 0.0
 
@@ -326,12 +407,14 @@ class ProfileStore:
             return False
         self._mtime = mtime
         try:
-            fresh = load_profiles(self.path)
+            fresh_profiles, fresh_launcher = load_profiles_and_launcher(self.path)
         except Exception as error:
             log.warning("profiles reload failed (%s); keeping previous set", error)
             return False
         self.profiles.clear()
-        self.profiles.update(fresh)
+        self.profiles.update(fresh_profiles)
+        self.launcher.apps[:] = fresh_launcher.apps
+        self.launcher.auto_return = fresh_launcher.auto_return
         log.info("profiles hot-reloaded")
         return True
 
@@ -618,12 +701,16 @@ class DeckSession:
                  focus_watcher: FocusWatcher | None = None,
                  profile_store: ProfileStore | None = None,
                  control: DeckControl | None = None,
-                 transport_name: str = "usb") -> None:
+                 transport_name: str = "usb",
+                 launcher: LauncherConfig | None = None) -> None:
         self.port = port
         self.profiles = profiles
         self.injector = injector
         self.focus_watcher = focus_watcher
         self.profile_store = profile_store
+        self.launcher = launcher if launcher is not None else (
+            profile_store.launcher if profile_store is not None else LauncherConfig()
+        )
         self.control = control
         self.transport_name = transport_name
         self._applied_override = ""
@@ -761,16 +848,15 @@ class DeckSession:
             log.warning("could not raise %s; sending keys to focused window",
                         profile.app_id)
 
-    def run_button(self, index: int) -> None:
-        profile = self.active_profile()
-        page = profile.page(self.page_index)
-        if index >= len(page):
-            raise ValueError(f"no button {index} on current page")
-        button = page[index]
-        if not button.label and not button.keys and not button.shell:
+    def _execute_button(self, button: Button, profile: Profile | None = None) -> None:
+        if not button.label and not button.keys and not button.shell and not button.app:
             return
-        if button.keys:
-            self._ensure_target_focus(profile)
+        if button.app:
+            launch_desktop_app(button.app)
+            log.info("pressed %r -> app %s", button.label, button.app)
+        elif button.keys:
+            if profile is not None:
+                self._ensure_target_focus(profile)
             self.injector.send_chord(button.keys)
             log.info("pressed %r -> keys %s", button.label, button.keys)
         elif button.shell:
@@ -784,13 +870,42 @@ class DeckSession:
         else:
             raise ValueError(f"button {button.label!r} has no action")
 
+    def run_button(self, index: int) -> None:
+        profile = self.active_profile()
+        page = profile.page(self.page_index)
+        if index >= len(page):
+            raise ValueError(f"no button {index} on current page")
+        self._execute_button(page[index], profile=profile)
+
+    def run_launcher_button(self, index: int) -> None:
+        if index < 0 or index >= len(self.launcher.apps):
+            raise ValueError(f"no launcher app at index {index}")
+        self._execute_button(self.launcher.apps[index])
+
     # -- protocol ------------------------------------------------------------
+
+    @staticmethod
+    def _clean_field(value: str | None, limit: int) -> str:
+        text = "".join(c if c.isprintable() and c not in "\t\r\n" else " " for c in (value or ""))
+        return text[:limit]
+
+    def push_launcher(self) -> None:
+        apps = self.launcher.apps[:MAX_LAUNCHER_APPS]
+        auto_ret = 1 if self.launcher.auto_return else 0
+        self.send(f"DECK LAUNCHER BEGIN\t{auto_ret}\t{len(apps)}")
+        for idx, btn in enumerate(apps):
+            lbl = self._clean_field(btn.label, 13)
+            icon = self._clean_field(btn.icon or "app", 15)
+            color = self._clean_field(btn.color or "accent", 15)
+            self.send(f"DECK LAUNCHER ITEM\t{idx}\t{lbl}\t{icon}\t{color}")
+        self.send("DECK LAUNCHER END")
 
     def handshake(self) -> None:
         self.send("DECK HELLO v1")
         self.set_focus("default", "deckd connected")
         self.push_host()
         self.push_profiles()
+        self.push_launcher()
 
     def push_host(self) -> None:
         name = socket.gethostname().split(".")[0]
@@ -817,6 +932,14 @@ class DeckSession:
             else:
                 self._device_override = profile_id
             self.sync_override(force=True)
+        elif line.startswith("DECK LAUNCHER PRESS") and len(parts) >= 5:
+            app_idx, seq = parts[3], parts[4]
+            try:
+                self.run_launcher_button(int(app_idx))
+                self.send(f"DECK ACK {seq}")
+            except Exception as error:
+                log.warning("launcher press %s failed: %s", app_idx, error)
+                self.send(f"DECK ERR {seq} {error}")
         elif line.startswith("DECK PRESS") and len(parts) >= 4:
             button_id, seq = parts[2], parts[3]
             try:
@@ -839,6 +962,7 @@ class DeckSession:
             self.push_focus(self.focus_app_id or "default",
                             self.focus_title or "deckd connected")
             self.push_layout()
+            self.push_launcher()
         elif line.startswith("ERR"):
             log.warning("device error: %s", line)
 
@@ -856,6 +980,7 @@ class DeckSession:
             self.page_index = 0
             self.push_profiles()
             self.push_layout()
+            self.push_launcher()
             self.publish_status()
         if self.focus_watcher is not None:
             entry = self.focus_watcher.current()
@@ -869,13 +994,20 @@ class DeckSession:
 
 def pump_session(session: DeckSession, listener: TcpListener | None = None,
                  ble_manager: "BleManager | None" = None,
+                 wifi_manager: "WifiManager | None" = None,
                  idle_timeout: float | None = None) -> None:
     """Run a session until its transport raises (or the idle timeout hits)."""
     session.handshake()
     while True:
-        if (session.transport_name == "usb" and session.control is not None
-                and not session.control.usb_enabled()):
-            raise ConnectionError("USB released by user")
+        if session.control is not None:
+            checks = {
+                "usb": (session.control.usb_enabled, "USB released by user"),
+                "wifi": (session.control.wifi_enabled, "WiFi disabled by user"),
+                "ble": (session.control.ble_enabled, "BLE disabled by user"),
+            }
+            check = checks.get(session.transport_name)
+            if check is not None and not check[0]():
+                raise ConnectionError(check[1])
         line = session.readline()
         if line:
             session.handle_line(line)
@@ -885,6 +1017,9 @@ def pump_session(session: DeckSession, listener: TcpListener | None = None,
             raise ConnectionError(f"no RX for {idle_timeout:.0f}s")
         if listener is not None:
             listener.refuse_pending()
+        if wifi_manager is not None:
+            wifi_manager.reconcile()
+            wifi_manager.refuse_pending()
         if ble_manager is not None:
             # Apply tray BLE on/off toggles even while a session is live.
             ble_manager.reconcile()
@@ -955,6 +1090,65 @@ class BleManager:
             self.listener = None
 
 
+class WifiManager:
+    """Starts/stops the WiFi TCP listener and mDNS advertiser from control state."""
+
+    def __init__(self, control: DeckControl, port: int, mdns: bool = True) -> None:
+        self.control = control
+        self.port = port
+        self.mdns = mdns
+        self.listener: TcpListener | None = None
+        self.advertiser: MdnsAdvertiser | None = None
+        self._warned_disabled = False
+
+    def reconcile(self) -> None:
+        want = self.control.wifi_enabled()
+        if want and self.listener is None:
+            if not self.port:
+                if not self._warned_disabled:
+                    log.warning("WiFi requested but --tcp-port=0 disables TCP; ignoring")
+                    self._warned_disabled = True
+                self.control.set_wifi_enabled(False)
+                self.control.publish(wifi="0")
+                return
+            try:
+                listener = TcpListener(self.port)
+                log.info("TCP listener on 0.0.0.0:%d", listener.port)
+                advertiser = MdnsAdvertiser(listener.port) if self.mdns else None
+                self.listener = listener
+                self.advertiser = advertiser
+                self.control.publish(wifi="1")
+            except Exception as error:
+                log.warning("could not start WiFi TCP listener: %s", error)
+                self.control.set_wifi_enabled(False)
+                self.control.publish(wifi="0")
+        elif not want and self.listener is not None:
+            self.close()
+            log.info("WiFi TCP listener stopped")
+            self.control.publish(wifi="0")
+
+    def accept(self, timeout: float = 0.0):
+        return self.listener.accept(timeout) if self.listener else None
+
+    def refuse_pending(self) -> None:
+        if self.listener is not None:
+            self.listener.refuse_pending()
+
+    def close(self) -> None:
+        if self.advertiser is not None:
+            try:
+                self.advertiser.close()
+            except Exception:
+                pass
+            self.advertiser = None
+        if self.listener is not None:
+            try:
+                self.listener.close()
+            except Exception:
+                pass
+            self.listener = None
+
+
 def run(args: argparse.Namespace) -> int:
     profile_store = ProfileStore(Path(args.profiles))
     profiles = profile_store.profiles
@@ -965,10 +1159,17 @@ def run(args: argparse.Namespace) -> int:
     )
     focus_watcher.start()
 
+    wifi_arg = getattr(args, "wifi", None)
+    wifi_enabled_init = (
+        bool(getattr(args, "tcp_port", 0)) if wifi_arg is None else bool(wifi_arg)
+    )
     control = DeckControl(
         profiles,
         bus_name=getattr(args, "control_bus_name", "org.mmesp32.Deckd"),
-        ble_enabled=bool(getattr(args, "ble", True)) and HAVE_BLE)
+        ble_enabled=bool(getattr(args, "ble", False)) and HAVE_BLE,
+        usb_enabled=bool(getattr(args, "usb", False)),
+        wifi_enabled=wifi_enabled_init,
+    )
     control.start()
 
     def publish_disconnected() -> None:
@@ -976,13 +1177,12 @@ def run(args: argparse.Namespace) -> int:
         if control.status().get("connected") == "1":
             control.publish(transport="none", connected="0")
 
-    listener: TcpListener | None = None
-    advertiser: MdnsAdvertiser | None = None
-    if args.tcp_port:
-        listener = TcpListener(args.tcp_port)
-        log.info("TCP listener on 0.0.0.0:%d", listener.port)
-        if getattr(args, "mdns", True):
-            advertiser = MdnsAdvertiser(listener.port)
+    wifi_manager = WifiManager(
+        control,
+        port=int(getattr(args, "tcp_port", TCP_PORT) or 0),
+        mdns=getattr(args, "mdns", True),
+    )
+    wifi_manager.reconcile()
 
     ble_manager = BleManager(
         control,
@@ -991,15 +1191,22 @@ def run(args: argparse.Namespace) -> int:
     ble_manager.reconcile()
 
     last_serial_attempt = 0.0
+    prev_usb_enabled = control.usb_enabled()
     SERIAL_RETRY_INTERVAL = 10.0
 
     try:
         while True:
+            wifi_manager.reconcile()
             ble_manager.reconcile()
+
+            usb_now = control.usb_enabled()
+            if usb_now and not prev_usb_enabled:
+                last_serial_attempt = 0.0
+            prev_usb_enabled = usb_now
 
             # USB serial transport (if configured and not "none", retried periodically).
             now = time.monotonic()
-            if (control.usb_enabled() and args.port
+            if (usb_now and args.port
                     and args.port.lower() != "none"
                     and now - last_serial_attempt >= SERIAL_RETRY_INTERVAL):
                 last_serial_attempt = now
@@ -1011,7 +1218,8 @@ def run(args: argparse.Namespace) -> int:
                         session = DeckSession(port, profiles, injector,
                                               focus_watcher, profile_store,
                                               control, "usb")
-                        pump_session(session, listener=listener, ble_manager=ble_manager,
+                        pump_session(session, ble_manager=ble_manager,
+                                     wifi_manager=wifi_manager,
                                      idle_timeout=SERIAL_IDLE_TIMEOUT)
                 except (serial.SerialException, ConnectionError) as error:
                     log.debug("serial session ended/unavailable (%s)", error)
@@ -1025,7 +1233,8 @@ def run(args: argparse.Namespace) -> int:
                     session = DeckSession(ble_conn, profiles, injector,
                                           focus_watcher, profile_store,
                                           control, "ble")
-                    pump_session(session, listener=listener, ble_manager=ble_manager,
+                    pump_session(session, ble_manager=ble_manager,
+                                 wifi_manager=wifi_manager,
                                  idle_timeout=BLE_IDLE_TIMEOUT)
                 except (ConnectionError, OSError) as error:
                     log.info("BLE session ended (%s)", error)
@@ -1035,41 +1244,38 @@ def run(args: argparse.Namespace) -> int:
                 continue
 
             # WiFi TCP transport.
-            if listener is not None:
-                conn = listener.accept(timeout=0.5 if ble_manager.listener is not None else RECONNECT_DELAY)
-                if conn is not None:
-                    transport = TcpTransport(conn)
-                    try:
-                        session = DeckSession(transport, profiles, injector,
-                                              focus_watcher, profile_store,
-                                              control, "wifi")
-                        pump_session(session, listener=listener, ble_manager=ble_manager,
-                                     idle_timeout=TCP_IDLE_TIMEOUT)
-                    except (ConnectionError, OSError) as error:
-                        log.info("TCP session ended (%s)", error)
-                    finally:
-                        transport.close()
-                        publish_disconnected()
-                    continue
+            conn = wifi_manager.accept(
+                timeout=0.5 if ble_manager.listener is not None else min(RECONNECT_DELAY, 0.25))
+            if conn is not None:
+                transport = TcpTransport(conn)
+                try:
+                    session = DeckSession(transport, profiles, injector,
+                                          focus_watcher, profile_store,
+                                          control, "wifi")
+                    pump_session(session, ble_manager=ble_manager,
+                                 wifi_manager=wifi_manager,
+                                 idle_timeout=TCP_IDLE_TIMEOUT)
+                except (ConnectionError, OSError) as error:
+                    log.info("TCP session ended (%s)", error)
+                finally:
+                    transport.close()
+                    publish_disconnected()
+                continue
 
-            if listener is None and ble_manager.listener is None:
-                log.info("serial unavailable; retrying in %.0fs",
-                         RECONNECT_DELAY)
-                time.sleep(RECONNECT_DELAY)
+            if wifi_manager.listener is None and ble_manager.listener is None:
+                time.sleep(0.25)
     except KeyboardInterrupt:
         log.info("shutting down")
-        try:
-            with serial.Serial(args.port, args.baud, timeout=0.5) as port:
-                port.write(b"DECK BYE\n")
-        except serial.SerialException:
-            pass
+        if control.usb_enabled() and args.port and args.port.lower() != "none":
+            try:
+                with serial.Serial(args.port, args.baud, timeout=0.5) as port:
+                    port.write(b"DECK BYE\n")
+            except serial.SerialException:
+                pass
         return 0
     finally:
         ble_manager.close()
-        if advertiser is not None:
-            advertiser.close()
-        if listener is not None:
-            listener.close()
+        wifi_manager.close()
 
 
 def main() -> int:
@@ -1093,10 +1299,22 @@ def main() -> int:
         help="TCP listen port for WiFi transport (0 disables)",
     )
     parser.add_argument(
+        "--wifi",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="enable WiFi TCP/mDNS transport on startup (default: false / idle)",
+    )
+    parser.add_argument(
+        "--usb",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="enable USB serial transport on startup (default: false / idle)",
+    )
+    parser.add_argument(
         "--ble",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="enable Bluetooth LE GATT server transport (default: true)",
+        default=False,
+        help="enable Bluetooth LE GATT server transport on startup (default: false / idle)",
     )
     parser.add_argument(
         "--ble-name",
