@@ -8,7 +8,7 @@ buttons = [
     { label = "Code", shell = "code", icon = "code", color = "accent" },
     { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
     { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
-    { label = "Shot", keys = "shift+super+s", icon = "camera", color = "good" },
+    { label = "Shot", keys = "print", icon = "camera", color = "good" },
     { label = "Lock", keys = "super+l", icon = "lock", color = "bad" },
 ]
 
@@ -26,66 +26,27 @@ buttons = [
     { label = "Close", keys = "alt+f4", icon = "close", color = "bad" },
 ]
 
-[app.code]
-lock_target = true
-
-[[app.code.groups]]
-title = "Code Editing"
+[[app.default.groups]]
+title = "Window & GNOME"
 color = "accent"
 buttons = [
-    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
-    { label = "Palette", keys = "ctrl+shift+p", icon = "command", color = "accent" },
-    { label = "QuickOpen", keys = "ctrl+p", icon = "search", color = "accent" },
-    { label = "FindAll", keys = "ctrl+shift+f", icon = "search", color = "idle" },
-    { label = "Format", keys = "ctrl+shift+i", icon = "align", color = "good" },
-    { label = "Comment", keys = "ctrl+slash", icon = "code", color = "idle" },
-    { label = "Term", keys = "ctrl+grave", icon = "terminal", color = "warn" },
-    { label = "Sidebar", keys = "ctrl+b", icon = "layout", color = "idle" },
+    { label = "TileLeft", keys = "super+left", icon = "left", color = "accent" },
+    { label = "TileRight", keys = "super+right", icon = "right", color = "accent" },
+    { label = "MaxWin", keys = "super+up", icon = "up", color = "good" },
+    { label = "Restore", keys = "super+down", icon = "down", color = "idle" },
+    { label = "MinWin", keys = "super+h", icon = "minus", color = "idle" },
+    { label = "QuickSet", keys = "super+s", icon = "settings", color = "warn" },
+    { label = "RecScrn", keys = "ctrl+shift+alt+r", icon = "camera", color = "bad" },
+    { label = "AppsView", keys = "super+a", icon = "app", color = "accent" },
 ]
 
-[[app.code.groups]]
-title = "Run & Versioning"
-color = "good"
-buttons = [
-    { label = "Run", keys = "f5", icon = "play", color = "good" },
-    { label = "Stop", keys = "shift+f5", icon = "stop", color = "bad" },
-    { label = "StepOver", keys = "f10", icon = "next", color = "warn" },
-    { label = "StepInto", keys = "f11", icon = "down", color = "warn" },
-    { label = "Breakpt", keys = "f9", icon = "circle", color = "bad" },
-    { label = "Git", keys = "ctrl+shift+g", icon = "git", color = "accent" },
-    { label = "Split", keys = "ctrl+\\", icon = "columns", color = "idle" },
-    { label = "Reopen", keys = "ctrl+shift+t", icon = "refresh", color = "idle" },
+[app.firefox_firefox]
+aliases = [
+    "firefox",
+    "Navigator",
 ]
-
-[app.code_code]
-lock_target = true
-
-[[app.code_code.groups]]
-title = "Code Editing"
-color = "accent"
-buttons = [
-    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
-    { label = "Palette", keys = "ctrl+shift+p", icon = "command", color = "accent" },
-    { label = "QuickOpen", keys = "ctrl+p", icon = "search", color = "accent" },
-    { label = "FindAll", keys = "ctrl+shift+f", icon = "search", color = "idle" },
-    { label = "Format", keys = "ctrl+shift+i", icon = "align", color = "good" },
-    { label = "Comment", keys = "ctrl+slash", icon = "code", color = "idle" },
-    { label = "Term", keys = "ctrl+grave", icon = "terminal", color = "warn" },
-    { label = "Sidebar", keys = "ctrl+b", icon = "layout", color = "idle" },
-]
-
-[[app.code_code.groups]]
-title = "Run & Versioning"
-color = "good"
-buttons = [
-    { label = "Run", keys = "f5", icon = "play", color = "good" },
-    { label = "Stop", keys = "shift+f5", icon = "stop", color = "bad" },
-    { label = "StepOver", keys = "f10", icon = "next", color = "warn" },
-    { label = "StepInto", keys = "f11", icon = "down", color = "warn" },
-    { label = "Breakpt", keys = "f9", icon = "circle", color = "bad" },
-    { label = "Git", keys = "ctrl+shift+g", icon = "git", color = "accent" },
-    { label = "Split", keys = "ctrl+\\", icon = "columns", color = "idle" },
-    { label = "Reopen", keys = "ctrl+shift+t", icon = "refresh", color = "idle" },
+match_title = [
+    "Mozilla Firefox",
 ]
 
 [[app.firefox_firefox.groups]]
@@ -96,9 +57,9 @@ buttons = [
     { label = "CloseTab", keys = "ctrl+w", icon = "close", color = "bad" },
     { label = "Reopen", keys = "ctrl+shift+t", icon = "refresh", color = "good" },
     { label = "Reload", keys = "ctrl+r", icon = "refresh", color = "idle" },
-    { label = "Back", keys = "alt+left", icon = "prev", color = "idle" },
-    { label = "Forward", keys = "alt+right", icon = "next", color = "idle" },
-    { label = "Find", keys = "ctrl+f", icon = "search", color = "idle" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Forward", keys = "alt+right", icon = "right", color = "idle" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
     { label = "DevTool", keys = "f12", icon = "code", color = "warn" },
 ]
 
@@ -107,13 +68,23 @@ title = "Views & Zoom"
 color = "good"
 buttons = [
     { label = "Private", keys = "ctrl+shift+p", icon = "eye", color = "warn" },
-    { label = "Bookmarks", keys = "ctrl+shift+o", icon = "bookmark", color = "accent" },
-    { label = "History", keys = "ctrl+h", icon = "clock", color = "idle" },
+    { label = "Bookmarks", keys = "ctrl+shift+o", icon = "list", color = "accent" },
+    { label = "History", keys = "ctrl+h", icon = "list", color = "idle" },
     { label = "Downlds", keys = "ctrl+shift+y", icon = "download", color = "idle" },
     { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
     { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
     { label = "ResetZm", keys = "ctrl+0", icon = "refresh", color = "idle" },
-    { label = "FullScrn", keys = "f11", icon = "expand", color = "accent" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+]
+
+[app."com.microsoft.Edge"]
+aliases = [
+    "microsoft-edge",
+    "microsoft-edge-stable",
+    "msedge",
+]
+match_title = [
+    "Microsoft Edge",
 ]
 
 [[app."com.microsoft.Edge".groups]]
@@ -124,9 +95,9 @@ buttons = [
     { label = "CloseTab", keys = "ctrl+w", icon = "close", color = "bad" },
     { label = "Reopen", keys = "ctrl+shift+t", icon = "refresh", color = "good" },
     { label = "Reload", keys = "ctrl+r", icon = "refresh", color = "idle" },
-    { label = "Back", keys = "alt+left", icon = "prev", color = "idle" },
-    { label = "Forward", keys = "alt+right", icon = "next", color = "idle" },
-    { label = "Find", keys = "ctrl+f", icon = "search", color = "idle" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Forward", keys = "alt+right", icon = "right", color = "idle" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
     { label = "DevTool", keys = "f12", icon = "code", color = "warn" },
 ]
 
@@ -135,107 +106,436 @@ title = "Views & Zoom"
 color = "good"
 buttons = [
     { label = "InPrivate", keys = "ctrl+shift+n", icon = "eye", color = "warn" },
-    { label = "Favorites", keys = "ctrl+shift+o", icon = "bookmark", color = "accent" },
-    { label = "History", keys = "ctrl+h", icon = "clock", color = "idle" },
+    { label = "Favorites", keys = "ctrl+shift+o", icon = "list", color = "accent" },
+    { label = "History", keys = "ctrl+h", icon = "list", color = "idle" },
     { label = "Downlds", keys = "ctrl+j", icon = "download", color = "idle" },
     { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
     { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
     { label = "ResetZm", keys = "ctrl+0", icon = "refresh", color = "idle" },
-    { label = "FullScrn", keys = "f11", icon = "expand", color = "accent" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
 ]
 
-[app.freecad_freecad]
-lock_target = true
+[app.pwa-gemini]
+aliases = [
+    "msedge-gdfaincndogidkdcdkhapmbffkckdkhn-Default",
+    "crx__gdfaincndogidkdcdkhapmbffkckdkhn",
+]
+match_title = [
+    "Gemini",
+]
 
-[[app.freecad_freecad.groups]]
-title = "Camera & Views"
+[[app.pwa-gemini.groups]]
+title = "Gemini Actions"
 color = "accent"
 buttons = [
-    { label = "Iso", keys = "0", icon = "cube", color = "accent" },
-    { label = "Top", keys = "2", icon = "arrow-up", color = "accent" },
-    { label = "Front", keys = "1", icon = "eye", color = "accent" },
-    { label = "Right", keys = "3", icon = "arrow-right", color = "accent" },
-    { label = "FitAll", keys = "v, f", icon = "expand", color = "good" },
-    { label = "Persp", keys = "v, p", icon = "camera", color = "idle" },
-    { label = "Ortho", keys = "v, o", icon = "grid", color = "idle" },
-    { label = "Axo", keys = "4", icon = "compass", color = "accent" },
+    { label = "NewChat", keys = "ctrl+shift+o", icon = "plus", color = "good" },
+    { label = "Sidebar", keys = "ctrl+shift+s", icon = "list", color = "accent" },
+    { label = "CopyLast", keys = "ctrl+shift+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Stop", keys = "esc", icon = "stop", color = "bad" },
+    { label = "Reload", keys = "ctrl+r", icon = "refresh", color = "warn" },
+    { label = "CloseWin", keys = "ctrl+w", icon = "close", color = "bad" },
 ]
 
-[[app.freecad_freecad.groups]]
-title = "Sketch & Modeling"
-color = "warn"
+[[app.pwa-gemini.groups]]
+title = "View & Window"
+color = "good"
 buttons = [
-    { label = "Line", keys = "g, l", icon = "edit", color = "accent" },
-    { label = "Circle", keys = "g, c", icon = "circle", color = "accent" },
-    { label = "Arc", keys = "g, a", icon = "arc", color = "accent" },
-    { label = "Pad", keys = "shift+p", icon = "box", color = "good" },
-    { label = "Pocket", keys = "shift+k", icon = "minus", color = "warn" },
-    { label = "Recomp", keys = "f5", icon = "refresh", color = "good" },
-    { label = "Measure", keys = "m", icon = "ruler", color = "idle" },
-    { label = "Tree", keys = "space", icon = "list", color = "idle" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Forward", keys = "alt+right", icon = "right", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "ResetZm", keys = "ctrl+0", icon = "refresh", color = "idle" },
+    { label = "Print", keys = "ctrl+p", icon = "file", color = "idle" },
+    { label = "DevTool", keys = "f12", icon = "code", color = "warn" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+]
+
+[app.pwa-codeserver]
+lock_target = true
+aliases = [
+    "msedge-gnhihbofldlelcplbnnhleggcpokcegb-Default",
+    "crx__gnhihbofldlelcplbnnhleggcpokcegb",
+]
+match_title = [
+    "code-server",
+]
+
+[[app.pwa-codeserver.groups]]
+title = "code-server Edit"
+color = "accent"
+buttons = [
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Palette", keys = "f1", icon = "list", color = "accent" },
+    { label = "QuickOpen", keys = "ctrl+p", icon = "eye", color = "accent" },
+    { label = "FindAll", keys = "ctrl+shift+f", icon = "eye", color = "idle" },
+    { label = "Format", keys = "ctrl+shift+i", icon = "edit", color = "good" },
+    { label = "Comment", keys = "ctrl+slash", icon = "code", color = "idle" },
+    { label = "Term", keys = "ctrl+grave", icon = "terminal", color = "warn" },
+    { label = "Sidebar", keys = "ctrl+b", icon = "list", color = "idle" },
+]
+
+[[app.pwa-codeserver.groups]]
+title = "Debug & Layout"
+color = "good"
+buttons = [
+    { label = "Run", keys = "f5", icon = "play", color = "good" },
+    { label = "Stop", keys = "shift+f5", icon = "stop", color = "bad" },
+    { label = "Git", keys = "ctrl+shift+g", icon = "upload", color = "accent" },
+    { label = "Split", keys = "ctrl+backslash", icon = "file", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "Reload", keys = "ctrl+r", icon = "refresh", color = "warn" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+]
+
+[app.pwa-onedrive]
+aliases = [
+    "msedge-abnfpfhjmipcnaibcolbacfhgfcmjjbn-Default",
+    "crx__abnfpfhjmipcnaibcolbacfhgfcmjjbn",
+]
+match_title = [
+    "OneDrive",
+]
+
+[[app.pwa-onedrive.groups]]
+title = "OneDrive Files"
+color = "accent"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Reload", keys = "ctrl+r", icon = "refresh", color = "good" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Forward", keys = "alt+right", icon = "right", color = "idle" },
+    { label = "SelectAll", keys = "ctrl+a", icon = "ok", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Rename", keys = "f2", icon = "edit", color = "warn" },
+]
+
+[[app.pwa-onedrive.groups]]
+title = "View & Window"
+color = "good"
+buttons = [
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "ResetZm", keys = "ctrl+0", icon = "refresh", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Open", keys = "enter", icon = "folder", color = "accent" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.pwa-tiktok]
+aliases = [
+    "msedge-nlalbmkafgmoifbeooblidblkmlhhpnc-Default",
+    "crx__nlalbmkafgmoifbeooblidblkmlhhpnc",
+]
+match_title = [
+    "TikTok",
+]
+
+[[app.pwa-tiktok.groups]]
+title = "Feed & Playback"
+color = "accent"
+buttons = [
+    { label = "PrevVid", keys = "up", icon = "up", color = "idle" },
+    { label = "NextVid", keys = "down", icon = "down", color = "accent" },
+    { label = "Play/Pse", keys = "space", icon = "play", color = "good" },
+    { label = "Like", keys = "l", icon = "ok", color = "good" },
+    { label = "Mute", keys = "m", icon = "mute", color = "bad" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+]
+
+[[app.pwa-tiktok.groups]]
+title = "Controls"
+color = "good"
+buttons = [
+    { label = "Seek-", keys = "left", icon = "prev", color = "idle" },
+    { label = "Seek+", keys = "right", icon = "next", color = "idle" },
+    { label = "Reload", keys = "ctrl+r", icon = "refresh", color = "warn" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "idle" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.code_code]
+lock_target = true
+aliases = [
+    "code",
+    "Code",
+]
+match_title = [
+    "Visual Studio Code",
+]
+
+[[app.code_code.groups]]
+title = "Code Editing"
+color = "accent"
+buttons = [
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Palette", keys = "ctrl+shift+p", icon = "list", color = "accent" },
+    { label = "QuickOpen", keys = "ctrl+p", icon = "eye", color = "accent" },
+    { label = "FindAll", keys = "ctrl+shift+f", icon = "eye", color = "idle" },
+    { label = "Format", keys = "ctrl+shift+i", icon = "edit", color = "good" },
+    { label = "Comment", keys = "ctrl+slash", icon = "code", color = "idle" },
+    { label = "Term", keys = "ctrl+grave", icon = "terminal", color = "warn" },
+    { label = "Sidebar", keys = "ctrl+b", icon = "list", color = "idle" },
+]
+
+[[app.code_code.groups]]
+title = "Run & Versioning"
+color = "good"
+buttons = [
+    { label = "Run", keys = "f5", icon = "play", color = "good" },
+    { label = "Stop", keys = "shift+f5", icon = "stop", color = "bad" },
+    { label = "StepOver", keys = "f10", icon = "next", color = "warn" },
+    { label = "StepInto", keys = "f11", icon = "down", color = "warn" },
+    { label = "Breakpt", keys = "f9", icon = "warning", color = "bad" },
+    { label = "Git", keys = "ctrl+shift+g", icon = "upload", color = "accent" },
+    { label = "Split", keys = "ctrl+backslash", icon = "file", color = "idle" },
+    { label = "Reopen", keys = "ctrl+shift+t", icon = "refresh", color = "idle" },
+]
+
+[app.antigravity]
+lock_target = true
+aliases = [
+    "Antigravity",
+]
+match_title = [
+    "Antigravity",
+]
+
+[[app.antigravity.groups]]
+title = "Agent & Workspace"
+color = "accent"
+buttons = [
+    { label = "NewChat", keys = "ctrl+shift+l", icon = "plus", color = "good" },
+    { label = "Palette", keys = "ctrl+shift+p", icon = "list", color = "accent" },
+    { label = "QuickOpen", keys = "ctrl+p", icon = "eye", color = "accent" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "FindAll", keys = "ctrl+shift+f", icon = "eye", color = "idle" },
+    { label = "Term", keys = "ctrl+grave", icon = "terminal", color = "warn" },
+    { label = "Sidebar", keys = "ctrl+b", icon = "list", color = "idle" },
+    { label = "Panel", keys = "ctrl+j", icon = "down", color = "idle" },
+]
+
+[[app.antigravity.groups]]
+title = "Edit & Build"
+color = "good"
+buttons = [
+    { label = "Format", keys = "ctrl+shift+i", icon = "edit", color = "good" },
+    { label = "Comment", keys = "ctrl+slash", icon = "code", color = "idle" },
+    { label = "Split", keys = "ctrl+backslash", icon = "file", color = "idle" },
+    { label = "Git", keys = "ctrl+shift+g", icon = "upload", color = "accent" },
+    { label = "Problems", keys = "ctrl+shift+m", icon = "warning", color = "warn" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "idle" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "idle" },
+    { label = "CloseTab", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.antigravity-ide]
+lock_target = true
+aliases = [
+    "Antigravity IDE",
+]
+match_title = [
+    "Antigravity IDE",
+]
+
+[[app.antigravity-ide.groups]]
+title = "IDE Navigation"
+color = "accent"
+buttons = [
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Palette", keys = "ctrl+shift+p", icon = "list", color = "accent" },
+    { label = "QuickOpen", keys = "ctrl+p", icon = "eye", color = "accent" },
+    { label = "FindAll", keys = "ctrl+shift+f", icon = "eye", color = "idle" },
+    { label = "Format", keys = "ctrl+shift+i", icon = "edit", color = "good" },
+    { label = "Comment", keys = "ctrl+slash", icon = "code", color = "idle" },
+    { label = "Term", keys = "ctrl+grave", icon = "terminal", color = "warn" },
+    { label = "Sidebar", keys = "ctrl+b", icon = "list", color = "idle" },
+]
+
+[[app.antigravity-ide.groups]]
+title = "Run & Diff"
+color = "good"
+buttons = [
+    { label = "Run", keys = "f5", icon = "play", color = "good" },
+    { label = "Stop", keys = "shift+f5", icon = "stop", color = "bad" },
+    { label = "StepOver", keys = "f10", icon = "next", color = "warn" },
+    { label = "StepInto", keys = "f11", icon = "down", color = "warn" },
+    { label = "Git", keys = "ctrl+shift+g", icon = "upload", color = "accent" },
+    { label = "Split", keys = "ctrl+backslash", icon = "file", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "idle" },
+    { label = "CloseTab", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app."dev.zed.Zed"]
+lock_target = true
+aliases = [
+    "Zed",
+    "zed",
+]
+match_title = [
+    "Zed",
+]
+
+[[app."dev.zed.Zed".groups]]
+title = "Zed Core"
+color = "accent"
+buttons = [
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Palette", keys = "ctrl+shift+p", icon = "list", color = "accent" },
+    { label = "OpenFile", keys = "ctrl+p", icon = "file", color = "accent" },
+    { label = "Search", keys = "ctrl+shift+f", icon = "eye", color = "idle" },
+    { label = "Format", keys = "shift+alt+f", icon = "edit", color = "good" },
+    { label = "Comment", keys = "ctrl+slash", icon = "code", color = "idle" },
+    { label = "Term", keys = "ctrl+grave", icon = "terminal", color = "warn" },
+    { label = "Sidebar", keys = "ctrl+b", icon = "list", color = "idle" },
+]
+
+[[app."dev.zed.Zed".groups]]
+title = "Symbols & Panes"
+color = "good"
+buttons = [
+    { label = "Outline", keys = "ctrl+shift+o", icon = "list", color = "accent" },
+    { label = "SplitRt", keys = "ctrl+k, right", icon = "right", color = "idle" },
+    { label = "ZoomPane", keys = "shift+esc", icon = "gps", color = "good" },
+    { label = "PrevTab", keys = "ctrl+pageup", icon = "prev", color = "idle" },
+    { label = "NextTab", keys = "ctrl+pagedown", icon = "next", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "idle" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.android-studio_android-studio]
+lock_target = true
+aliases = [
+    "jetbrains-studio",
+    "android-studio",
+]
+match_title = [
+    "Android Studio",
+]
+
+[[app.android-studio_android-studio.groups]]
+title = "Build & Debug"
+color = "good"
+buttons = [
+    { label = "Run", keys = "shift+f10", icon = "play", color = "good" },
+    { label = "Debug", keys = "shift+f9", icon = "charge", color = "warn" },
+    { label = "Stop", keys = "ctrl+f2", icon = "stop", color = "bad" },
+    { label = "MakeProj", keys = "ctrl+f9", icon = "ok", color = "accent" },
+    { label = "StepOver", keys = "f8", icon = "next", color = "warn" },
+    { label = "StepInto", keys = "f7", icon = "down", color = "warn" },
+    { label = "Resume", keys = "f9", icon = "play", color = "good" },
+    { label = "Breakpt", keys = "ctrl+f8", icon = "warning", color = "bad" },
+]
+
+[[app.android-studio_android-studio.groups]]
+title = "Navigate & Tools"
+color = "accent"
+buttons = [
+    { label = "Action", keys = "ctrl+shift+a", icon = "list", color = "accent" },
+    { label = "FindAll", keys = "ctrl+shift+f", icon = "eye", color = "idle" },
+    { label = "Reformat", keys = "ctrl+alt+l", icon = "edit", color = "good" },
+    { label = "Logcat", keys = "alt+6", icon = "terminal", color = "warn" },
+    { label = "Git", keys = "alt+9", icon = "upload", color = "accent" },
+    { label = "Project", keys = "alt+1", icon = "folder", color = "idle" },
+    { label = "SaveAll", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "CloseTab", keys = "ctrl+f4", icon = "close", color = "bad" },
 ]
 
 [app.arduino_arduino]
 lock_target = true
+aliases = [
+    "processing-app-Base",
+    "arduino-ide",
+]
+match_title = [
+    "Arduino",
+]
 
 [[app.arduino_arduino.groups]]
 title = "Sketch & Build"
 color = "accent"
 buttons = [
-    { label = "Verify", keys = "ctrl+r", icon = "check", color = "good" },
+    { label = "Verify", keys = "ctrl+r", icon = "ok", color = "good" },
     { label = "Upload", keys = "ctrl+u", icon = "upload", color = "accent" },
     { label = "Monitor", keys = "ctrl+shift+m", icon = "terminal", color = "warn" },
     { label = "Plotter", keys = "ctrl+shift+l", icon = "activity", color = "warn" },
-    { label = "Format", keys = "ctrl+t", icon = "align", color = "idle" },
+    { label = "Format", keys = "ctrl+t", icon = "edit", color = "idle" },
     { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
     { label = "New", keys = "ctrl+n", icon = "plus", color = "idle" },
-    { label = "Find", keys = "ctrl+f", icon = "search", color = "idle" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
 ]
 
 [[app.arduino_arduino.groups]]
 title = "Edit & Navigation"
 color = "good"
 buttons = [
-    { label = "Undo", keys = "ctrl+z", icon = "undo", color = "idle" },
-    { label = "Redo", keys = "ctrl+y", icon = "redo", color = "idle" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+y", icon = "next", color = "idle" },
     { label = "Comment", keys = "ctrl+slash", icon = "code", color = "idle" },
-    { label = "Indent", keys = "tab", icon = "arrow-right", color = "idle" },
-    { label = "Outdent", keys = "shift+tab", icon = "arrow-left", color = "idle" },
+    { label = "Indent", keys = "tab", icon = "right", color = "idle" },
+    { label = "Outdent", keys = "shift+tab", icon = "left", color = "idle" },
     { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
     { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
     { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
 ]
 
-[[app.spotify_spotify.groups]]
-title = "Playback"
-color = "good"
-buttons = [
-    { label = "Play/Pse", keys = "space", icon = "play", color = "good" },
-    { label = "Prev", keys = "ctrl+left", icon = "prev", color = "idle" },
-    { label = "Next", keys = "ctrl+right", icon = "next", color = "idle" },
-    { label = "Vol+", keys = "ctrl+up", icon = "volup", color = "good" },
-    { label = "Vol-", keys = "ctrl+down", icon = "voldown", color = "good" },
-    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
-    { label = "Shuffle", keys = "ctrl+s", icon = "refresh", color = "accent" },
-    { label = "Repeat", keys = "ctrl+r", icon = "refresh", color = "accent" },
+[app.thonny_thonny]
+lock_target = true
+aliases = [
+    "Thonny",
+    "thonny",
+]
+match_title = [
+    "Thonny",
 ]
 
-[[app.spotify_spotify.groups]]
-title = "Library & App"
+[[app.thonny_thonny.groups]]
+title = "Python Run/Debug"
+color = "good"
+buttons = [
+    { label = "Run", keys = "f5", icon = "play", color = "good" },
+    { label = "Debug", keys = "ctrl+f5", icon = "charge", color = "warn" },
+    { label = "Stop", keys = "ctrl+f2", icon = "stop", color = "bad" },
+    { label = "StepOver", keys = "f6", icon = "next", color = "warn" },
+    { label = "StepInto", keys = "f7", icon = "down", color = "warn" },
+    { label = "StepOut", keys = "f8", icon = "up", color = "idle" },
+    { label = "Resume", keys = "f9", icon = "play", color = "good" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+]
+
+[[app.thonny_thonny.groups]]
+title = "Edit & Shell"
 color = "accent"
 buttons = [
-    { label = "Like", keys = "alt+shift+b", icon = "heart", color = "good" },
-    { label = "Search", keys = "ctrl+k", icon = "search", color = "accent" },
-    { label = "Queue", keys = "alt+shift+q", icon = "list", color = "idle" },
-    { label = "Lyrics", keys = "ctrl+d", icon = "file-text", color = "idle" },
-    { label = "FullScrn", keys = "f11", icon = "expand", color = "accent" },
-    { label = "Home", keys = "alt+left", icon = "home", color = "idle" },
+    { label = "Comment", keys = "alt+3", icon = "code", color = "idle" },
+    { label = "Uncommnt", keys = "alt+4", icon = "code", color = "idle" },
+    { label = "ClearShl", keys = "ctrl+l", icon = "trash", color = "warn" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+y", icon = "next", color = "idle" },
     { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "idle" },
-    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
 ]
 
 [app.gitkraken_gitkraken]
 lock_target = true
+aliases = [
+    "gitkraken",
+]
+match_title = [
+    "GitKraken",
+]
 
 [[app.gitkraken_gitkraken.groups]]
 title = "Git Actions"
@@ -244,10 +544,10 @@ buttons = [
     { label = "Pull", keys = "ctrl+p", icon = "download", color = "good" },
     { label = "Push", keys = "ctrl+u", icon = "upload", color = "accent" },
     { label = "Fetch", keys = "ctrl+shift+f", icon = "refresh", color = "idle" },
-    { label = "Commit", keys = "ctrl+k", icon = "check", color = "good" },
-    { label = "Stash", keys = "ctrl+shift+s", icon = "archive", color = "warn" },
+    { label = "Commit", keys = "ctrl+k", icon = "ok", color = "good" },
+    { label = "Stash", keys = "ctrl+shift+s", icon = "download", color = "warn" },
     { label = "PopStash", keys = "ctrl+shift+p", icon = "upload", color = "warn" },
-    { label = "Branch", keys = "ctrl+b", icon = "git", color = "accent" },
+    { label = "Branch", keys = "ctrl+b", icon = "list", color = "accent" },
     { label = "Refresh", keys = "f5", icon = "refresh", color = "idle" },
 ]
 
@@ -256,13 +556,414 @@ title = "Views & Tools"
 color = "warn"
 buttons = [
     { label = "Term", keys = "alt+t", icon = "terminal", color = "warn" },
-    { label = "Diff", keys = "ctrl+d", icon = "columns", color = "idle" },
-    { label = "Search", keys = "ctrl+f", icon = "search", color = "idle" },
-    { label = "Undo", keys = "ctrl+z", icon = "undo", color = "idle" },
-    { label = "Redo", keys = "ctrl+y", icon = "redo", color = "idle" },
+    { label = "Diff", keys = "ctrl+d", icon = "code", color = "idle" },
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+y", icon = "next", color = "idle" },
     { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "idle" },
     { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "idle" },
     { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.git-cola_git-cola]
+lock_target = true
+aliases = [
+    "git-cola_git-dag",
+    "git-cola",
+    "git-dag",
+]
+match_title = [
+    "git-cola",
+    "git-dag",
+]
+
+[[app.git-cola_git-cola.groups]]
+title = "Git Cola Actions"
+color = "accent"
+buttons = [
+    { label = "Stage", keys = "ctrl+s", icon = "ok", color = "good" },
+    { label = "Commit", keys = "ctrl+enter", icon = "upload", color = "good" },
+    { label = "Amend", keys = "ctrl+m", icon = "edit", color = "warn" },
+    { label = "Refresh", keys = "ctrl+r", icon = "refresh", color = "accent" },
+    { label = "Fetch", keys = "ctrl+shift+f", icon = "download", color = "idle" },
+    { label = "Pull", keys = "ctrl+shift+l", icon = "download", color = "accent" },
+    { label = "Push", keys = "ctrl+p", icon = "upload", color = "accent" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[[app.git-cola_git-cola.groups]]
+title = "View & Diff"
+color = "idle"
+buttons = [
+    { label = "DAG", keys = "ctrl+g", icon = "list", color = "accent" },
+    { label = "Stash", keys = "alt+shift+s", icon = "save", color = "warn" },
+    { label = "Diff", keys = "ctrl+d", icon = "code", color = "idle" },
+    { label = "Branch", keys = "ctrl+b", icon = "list", color = "idle" },
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+]
+
+[app."org.gnome.TextEditor"]
+aliases = [
+    "gnome-text-editor",
+]
+match_title = [
+    "Text Editor",
+]
+
+[[app."org.gnome.TextEditor".groups]]
+title = "Text Editing"
+color = "accent"
+buttons = [
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "SaveAs", keys = "ctrl+shift+s", icon = "save", color = "idle" },
+    { label = "NewTab", keys = "ctrl+t", icon = "plus", color = "accent" },
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "idle" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Replace", keys = "ctrl+h", icon = "edit", color = "warn" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[[app."org.gnome.TextEditor".groups]]
+title = "View & Format"
+color = "good"
+buttons = [
+    { label = "Redo", keys = "ctrl+shift+z", icon = "next", color = "idle" },
+    { label = "SelectAll", keys = "ctrl+a", icon = "ok", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "ResetZm", keys = "ctrl+0", icon = "refresh", color = "idle" },
+    { label = "Sidebar", keys = "f9", icon = "list", color = "accent" },
+]
+
+[app."org.gnome.Sysprof"]
+aliases = [
+    "sysprof",
+]
+match_title = [
+    "Sysprof",
+]
+
+[[app."org.gnome.Sysprof".groups]]
+title = "Profiler Controls"
+color = "warn"
+buttons = [
+    { label = "Record", keys = "ctrl+r", icon = "play", color = "good" },
+    { label = "Stop", keys = "ctrl+e", icon = "stop", color = "bad" },
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "idle" },
+    { label = "SaveAs", keys = "ctrl+shift+s", icon = "save", color = "accent" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[[app."org.gnome.Sysprof".groups]]
+title = "Navigate"
+color = "idle"
+buttons = [
+    { label = "ResetZm", keys = "ctrl+0", icon = "refresh", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Left", keys = "left", icon = "left", color = "idle" },
+    { label = "Right", keys = "right", icon = "right", color = "idle" },
+    { label = "Prefs", keys = "ctrl+comma", icon = "settings", color = "idle" },
+    { label = "Help", keys = "f1", icon = "bell", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.freecad_freecad]
+lock_target = true
+aliases = [
+    "FreeCAD",
+    "freecad",
+    "freecad_freecad",
+    "org.freecadweb.FreeCAD",
+    "org.freecad.FreeCAD",
+]
+match_title = [
+    "FreeCAD",
+]
+
+[[app.freecad_freecad.groups]]
+title = "Standard Views"
+color = "accent"
+buttons = [
+    { label = "Iso", keys = "0", icon = "app", color = "accent" },
+    { label = "Top", keys = "2", icon = "up", color = "accent" },
+    { label = "Bottom", keys = "5", icon = "down", color = "accent" },
+    { label = "Front", keys = "1", icon = "eye", color = "accent" },
+    { label = "Rear", keys = "4", icon = "eye_close", color = "accent" },
+    { label = "Right", keys = "3", icon = "right", color = "accent" },
+    { label = "Left", keys = "6", icon = "left", color = "accent" },
+    { label = "FitAll", keys = "v, f", icon = "gps", color = "good" },
+]
+
+[[app.freecad_freecad.groups]]
+title = "Camera & Display"
+color = "idle"
+buttons = [
+    { label = "FitSel", keys = "v, s", icon = "gps", color = "good" },
+    { label = "Persp", keys = "v, p", icon = "camera", color = "idle" },
+    { label = "Ortho", keys = "v, o", icon = "list", color = "idle" },
+    { label = "Tree", keys = "space", icon = "list", color = "idle" },
+    { label = "Wire", keys = "v, 1", icon = "bars", color = "idle" },
+    { label = "Shaded", keys = "v, 2", icon = "image", color = "idle" },
+    { label = "Measure", keys = "m", icon = "edit", color = "idle" },
+    { label = "Recomp", keys = "f5", icon = "refresh", color = "good" },
+]
+
+[[app.freecad_freecad.groups]]
+title = "Sketch Create"
+color = "accent"
+buttons = [
+    { label = "Line", keys = "g, l", icon = "edit", color = "accent" },
+    { label = "Polyline", keys = "g, m", icon = "edit", color = "accent" },
+    { label = "Rect", keys = "g, r", icon = "app", color = "accent" },
+    { label = "Circle", keys = "g, c", icon = "plus", color = "accent" },
+    { label = "Arc", keys = "g, a", icon = "loop", color = "accent" },
+    { label = "Slot", keys = "g, s", icon = "bullet", color = "accent" },
+    { label = "Fillet", keys = "g, f", icon = "loop", color = "accent" },
+    { label = "Point", keys = "g, p", icon = "bullet", color = "accent" },
+]
+
+[[app.freecad_freecad.groups]]
+title = "Sketch Edit"
+color = "warn"
+buttons = [
+    { label = "Constr", keys = "g, n", icon = "settings", color = "warn" },
+    { label = "Carbon", keys = "c, c", icon = "copy", color = "accent" },
+    { label = "ExtEdge", keys = "x", icon = "download", color = "accent" },
+    { label = "Trim", keys = "g, t", icon = "cut", color = "warn" },
+    { label = "Extend", keys = "g, q", icon = "next", color = "idle" },
+    { label = "Split", keys = "g, z", icon = "cut", color = "warn" },
+    { label = "Cancel", keys = "esc", icon = "close", color = "bad" },
+    { label = "Close", keys = "shift+q", icon = "check", color = "good" },
+]
+
+[[app.freecad_freecad.groups]]
+title = "Geometric Constrain"
+color = "good"
+buttons = [
+    { label = "Coincid", keys = "c", icon = "check", color = "good" },
+    { label = "PointObj", keys = "o", icon = "bullet", color = "good" },
+    { label = "Horiz", keys = "h", icon = "right", color = "accent" },
+    { label = "Vert", keys = "v", icon = "up", color = "accent" },
+    { label = "Parallel", keys = "p", icon = "bars", color = "accent" },
+    { label = "Perpend", keys = "n", icon = "plus", color = "accent" },
+    { label = "Tangent", keys = "t", icon = "loop", color = "accent" },
+    { label = "Equal", keys = "e", icon = "check", color = "good" },
+]
+
+[[app.freecad_freecad.groups]]
+title = "Dimension Constrain"
+color = "accent"
+buttons = [
+    { label = "Symmetry", keys = "s", icon = "shuffle", color = "good" },
+    { label = "Lock", keys = "k", icon = "lock", color = "warn" },
+    { label = "Distance", keys = "k, d", icon = "edit", color = "accent" },
+    { label = "HorizDist", keys = "l", icon = "right", color = "accent" },
+    { label = "VertDist", keys = "i", icon = "up", color = "accent" },
+    { label = "Radius", keys = "k, r", icon = "loop", color = "accent" },
+    { label = "Diameter", keys = "k, s", icon = "loop", color = "accent" },
+    { label = "Angle", keys = "k, a", icon = "edit", color = "accent" },
+]
+
+[[app.freecad_freecad.groups]]
+title = "PartDesign Features"
+color = "good"
+buttons = [
+    { label = "NewSketch", keys = "shift+s", icon = "edit", color = "accent" },
+    { label = "Pad", keys = "shift+p", icon = "upload", color = "good" },
+    { label = "Pocket", keys = "shift+k", icon = "minus", color = "warn" },
+    { label = "Hole", keys = "shift+h", icon = "bullet", color = "warn" },
+    { label = "Revolve", keys = "shift+r", icon = "loop", color = "good" },
+    { label = "Groove", keys = "shift+g", icon = "loop", color = "warn" },
+    { label = "Loft", keys = "shift+l", icon = "upload", color = "accent" },
+    { label = "Pipe", keys = "shift+w", icon = "upload", color = "accent" },
+]
+
+[[app.freecad_freecad.groups]]
+title = "Dressup & Transforms"
+color = "accent"
+buttons = [
+    { label = "Fillet", keys = "shift+f", icon = "loop", color = "accent" },
+    { label = "Chamfer", keys = "shift+c", icon = "cut", color = "accent" },
+    { label = "Draft", keys = "shift+d", icon = "edit", color = "idle" },
+    { label = "Thick", keys = "shift+t", icon = "app", color = "accent" },
+    { label = "Mirror", keys = "shift+m", icon = "shuffle", color = "idle" },
+    { label = "Linear", keys = "shift+x", icon = "right", color = "idle" },
+    { label = "Polar", keys = "shift+o", icon = "loop", color = "idle" },
+    { label = "Export", keys = "ctrl+e", icon = "save", color = "good" },
+]
+
+[app.elegoo-satellite]
+lock_target = true
+aliases = [
+    "wine-Programs-ELEGOO SatelLite-ELEGOO SatelLite",
+    "elegoo satellite.exe",
+    "ELEGOO SatelLite",
+]
+match_title = [
+    "ELEGOO SatelLite",
+]
+
+[[app.elegoo-satellite.groups]]
+title = "Slicer & Supports"
+color = "accent"
+buttons = [
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "accent" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Slice", keys = "ctrl+r", icon = "play", color = "warn" },
+    { label = "Support", keys = "shift+i", icon = "plus", color = "good" },
+    { label = "Hollow", keys = "alt+h", icon = "edit", color = "accent" },
+    { label = "Holes", keys = "shift+p", icon = "app", color = "idle" },
+    { label = "Repair", keys = "ctrl+alt+r", icon = "refresh", color = "warn" },
+    { label = "AutoLayt", keys = "shift+a", icon = "list", color = "accent" },
+]
+
+[[app.elegoo-satellite.groups]]
+title = "Transform & Plate"
+color = "good"
+buttons = [
+    { label = "Move", keys = "m", icon = "gps", color = "accent" },
+    { label = "Rotate", keys = "r", icon = "loop", color = "accent" },
+    { label = "Scale", keys = "s", icon = "plus", color = "accent" },
+    { label = "Mirror", keys = "ctrl+m", icon = "loop", color = "idle" },
+    { label = "Array", keys = "ctrl+d", icon = "copy", color = "idle" },
+    { label = "OnPlate", keys = "shift+b", icon = "down", color = "good" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+]
+
+[app.uvtools]
+lock_target = true
+aliases = [
+    "wine-Programs-UVtools-UVtools",
+    "uvtools.exe",
+    "UVtools",
+]
+match_title = [
+    "UVtools",
+]
+
+[[app.uvtools.groups]]
+title = "File & Layers"
+color = "accent"
+buttons = [
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "accent" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "SaveAs", keys = "ctrl+shift+s", icon = "save", color = "idle" },
+    { label = "LayerDn", keys = "q", icon = "down", color = "idle" },
+    { label = "LayerUp", keys = "e", icon = "up", color = "idle" },
+    { label = "PrevLyr", keys = "down", icon = "prev", color = "idle" },
+    { label = "NextLyr", keys = "up", icon = "next", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[[app.uvtools.groups]]
+title = "Inspect & ROI"
+color = "warn"
+buttons = [
+    { label = "Issues", keys = "ctrl+i", icon = "warning", color = "warn" },
+    { label = "FixAll", keys = "ctrl+f", icon = "ok", color = "good" },
+    { label = "PeelHUD", keys = "p", icon = "activity", color = "accent" },
+    { label = "ApplyPx", keys = "ctrl+e", icon = "edit", color = "good" },
+    { label = "ClrROI", keys = "alt+delete", icon = "trash", color = "warn" },
+    { label = "CropROI", keys = "alt+insert", icon = "gps", color = "accent" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Quit", keys = "alt+f4", icon = "close", color = "bad" },
+]
+
+[app.voxeldance-tango]
+lock_target = true
+aliases = [
+    "wine-Programs-Voxeldance Tango-Voxeldance Tango 4.0",
+    "voxeldance tango.exe",
+    "Voxeldance Tango",
+]
+match_title = [
+    "Voxeldance Tango",
+    "Tango",
+]
+
+[[app.voxeldance-tango.groups]]
+title = "Tango Scene"
+color = "accent"
+buttons = [
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "accent" },
+    { label = "Import", keys = "ctrl+i", icon = "download", color = "good" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Support", keys = "shift+i", icon = "plus", color = "warn" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+y", icon = "next", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+]
+
+[[app.voxeldance-tango.groups]]
+title = "View & Edit"
+color = "warn"
+buttons = [
+    { label = "SelectAll", keys = "ctrl+a", icon = "ok", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Duplicate", keys = "ctrl+d", icon = "copy", color = "accent" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "Quit", keys = "alt+f4", icon = "close", color = "bad" },
+]
+
+[app.pygpt_pygpt]
+aliases = [
+    "pygpt",
+    "PyGPT",
+]
+match_title = [
+    "PyGPT",
+]
+
+[[app.pygpt_pygpt.groups]]
+title = "PyGPT Actions"
+color = "accent"
+buttons = [
+    { label = "NewCtx", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Send", keys = "ctrl+enter", icon = "upload", color = "good" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Voice", keys = "ctrl+shift+s", icon = "music", color = "warn" },
+    { label = "Settings", keys = "ctrl+comma", icon = "settings", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[[app.pygpt_pygpt.groups]]
+title = "View & Modes"
+color = "idle"
+buttons = [
+    { label = "Clear", keys = "ctrl+l", icon = "trash", color = "warn" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "idle" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "Close", keys = "alt+f4", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Ptyxis"]
+aliases = [
+    "ptyxis",
+]
+match_title = [
+    "Ptyxis",
+    "Terminal",
 ]
 
 [[app."org.gnome.Ptyxis".groups]]
@@ -272,10 +973,10 @@ buttons = [
     { label = "Copy", keys = "ctrl+shift+c", icon = "copy", color = "idle" },
     { label = "Paste", keys = "ctrl+shift+v", icon = "paste", color = "idle" },
     { label = "NewTab", shell = "ptyxis --tab", icon = "plus", color = "good" },
-    { label = "NewWin", shell = "ptyxis --new-window", icon = "window", color = "accent" },
+    { label = "NewWin", shell = "ptyxis --new-window", icon = "app", color = "accent" },
     { label = "Clear", keys = "ctrl+l", icon = "trash", color = "idle" },
-    { label = "Search", keys = "ctrl+shift+f", icon = "search", color = "accent" },
-    { label = "Reset", keys = "ctrl+shift+k", icon = "refresh", color = "warn" },
+    { label = "Search", keys = "ctrl+shift+f", icon = "eye", color = "accent" },
+    { label = "Overview", keys = "ctrl+shift+o", icon = "list", color = "warn" },
     { label = "Close", keys = "ctrl+shift+w", icon = "close", color = "bad" },
 ]
 
@@ -293,70 +994,1756 @@ buttons = [
     { label = "NextTab", keys = "ctrl+pagedown", icon = "next", color = "idle" },
 ]
 
+[app."org.gnome.Nautilus"]
+aliases = [
+    "nautilus",
+    "Files",
+]
+match_title = [
+    "Files",
+]
+
 [[app."org.gnome.Nautilus".groups]]
 title = "File Actions"
 color = "accent"
-
-[[app."org.gnome.Nautilus".groups.buttons]]
-label = "NewTab"
-keys = "ctrl+t"
-icon = "plus"
-color = "accent"
-
-[[app."org.gnome.Nautilus".groups.buttons]]
-label = "NewDir"
-keys = "ctrl+shift+n"
-icon = "folder"
-color = "good"
-
-[[app."org.gnome.Nautilus".groups.buttons]]
-label = "Hidden"
-keys = "ctrl+h"
-icon = "eye"
-color = "warn"
-
-[[app."org.gnome.Nautilus".groups.buttons]]
-label = "Rename"
-keys = "f2"
-icon = "edit"
-color = "accent"
-
-[[app."org.gnome.Nautilus".groups.buttons]]
-label = "Trash"
-keys = "delete"
-icon = "trash"
-color = "bad"
-
-[[app."org.gnome.Nautilus".groups.buttons]]
-label = "Search"
-keys = "ctrl+f"
-icon = "search"
-color = "idle"
-
-[[app."org.gnome.Nautilus".groups.buttons]]
-label = "TermHere"
-shell = "ptyxis --working-directory ."
-icon = "terminal"
-color = "warn"
-
-[[app."org.gnome.Nautilus".groups.buttons]]
-label = "Home"
-shell = "nautilus ~"
-icon = "home"
-color = "accent"
+buttons = [
+    { label = "NewTab", keys = "ctrl+t", icon = "plus", color = "accent" },
+    { label = "NewDir", keys = "ctrl+shift+n", icon = "folder", color = "good" },
+    { label = "Hidden", keys = "ctrl+h", icon = "eye", color = "warn" },
+    { label = "Rename", keys = "f2", icon = "edit", color = "accent" },
+    { label = "Trash", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "PathBar", keys = "ctrl+l", icon = "edit", color = "warn" },
+    { label = "Home", shell = "nautilus ~", icon = "home", color = "accent" },
+]
 
 [[app."org.gnome.Nautilus".groups]]
 title = "Navigation"
 color = "good"
 buttons = [
-    { label = "Up", keys = "alt+up", icon = "arrow-up", color = "accent" },
+    { label = "Up", keys = "alt+up", icon = "up", color = "accent" },
     { label = "Back", keys = "alt+left", icon = "prev", color = "idle" },
     { label = "Forward", keys = "alt+right", icon = "next", color = "idle" },
-    { label = "Refresh", keys = "ctrl+r", icon = "refresh", color = "idle" },
-    { label = "SelectAll", keys = "ctrl+a", icon = "check", color = "idle" },
+    { label = "GridView", keys = "ctrl+1", icon = "app", color = "idle" },
+    { label = "ListView", keys = "ctrl+2", icon = "list", color = "idle" },
     { label = "Props", keys = "alt+enter", icon = "settings", color = "idle" },
     { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
-    { label = "Root", shell = "nautilus /", icon = "hard-drive", color = "warn" },
+    { label = "Root", shell = "nautilus /", icon = "drive", color = "warn" },
+]
+
+[app.virt-manager]
+aliases = [
+    "Virt-manager",
+]
+match_title = [
+    "Virtual Machine Manager",
+]
+
+[[app.virt-manager.groups]]
+title = "VM Controls"
+color = "accent"
+buttons = [
+    { label = "OpenVM", keys = "enter", icon = "app", color = "accent" },
+    { label = "NewVM", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Run", keys = "ctrl+r", icon = "play", color = "good" },
+    { label = "Pause", keys = "ctrl+p", icon = "pause", color = "warn" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "Refresh", keys = "f5", icon = "refresh", color = "idle" },
+    { label = "Details", keys = "alt+i", icon = "settings", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[[app.virt-manager.groups]]
+title = "Guest & Host"
+color = "warn"
+buttons = [
+    { label = "RelGrab", keys = "ctrl+alt", icon = "left", color = "warn" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Shot", keys = "print", icon = "camera", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Prefs", keys = "alt+p", icon = "settings", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.gnome-boxes_gnome-boxes]
+aliases = [
+    "org.gnome.Boxes",
+    "gnome-boxes",
+]
+match_title = [
+    "Boxes",
+]
+
+[[app.gnome-boxes_gnome-boxes.groups]]
+title = "Boxes VM"
+color = "accent"
+buttons = [
+    { label = "NewVM", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "OpenVM", keys = "enter", icon = "play", color = "good" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "RelGrab", keys = "ctrl+alt", icon = "left", color = "warn" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[[app.gnome-boxes_gnome-boxes.groups]]
+title = "Navigate"
+color = "idle"
+buttons = [
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Left", keys = "left", icon = "left", color = "idle" },
+    { label = "Right", keys = "right", icon = "right", color = "idle" },
+    { label = "Cancel", keys = "esc", icon = "close", color = "idle" },
+    { label = "Props", keys = "alt+enter", icon = "settings", color = "idle" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+]
+
+[app.winebar_winebar]
+aliases = [
+    "io.github.tulon.winebar",
+    "winebar",
+]
+match_title = [
+    "Wine Bar",
+]
+
+[[app.winebar_winebar.groups]]
+title = "Wine Bar"
+color = "accent"
+buttons = [
+    { label = "NewApp", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Open", keys = "enter", icon = "play", color = "good" },
+    { label = "Refresh", keys = "ctrl+r", icon = "refresh", color = "idle" },
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Settings", keys = "ctrl+comma", icon = "settings", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[[app.winebar_winebar.groups]]
+title = "Window"
+color = "idle"
+buttons = [
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Tab", keys = "tab", icon = "right", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Term", shell = "x-terminal-emulator", icon = "terminal", color = "warn" },
+    { label = "Files", shell = "nautilus", icon = "folder", color = "accent" },
+    { label = "Help", keys = "f1", icon = "bell", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.remmina.Remmina"]
+aliases = [
+    "remmina",
+    "Remmina",
+]
+match_title = [
+    "Remmina",
+]
+
+[[app."org.remmina.Remmina".groups]]
+title = "Remote Session"
+color = "accent"
+buttons = [
+    { label = "NewConn", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Connect", keys = "enter", icon = "wifi", color = "good" },
+    { label = "FullScrn", keys = "rctrl+f", icon = "gps", color = "accent" },
+    { label = "Scale", keys = "rctrl+s", icon = "refresh", color = "idle" },
+    { label = "GrabKey", keys = "rctrl", icon = "lock", color = "warn" },
+    { label = "Shot", keys = "rctrl+f12", icon = "camera", color = "idle" },
+    { label = "MinWin", keys = "rctrl+f9", icon = "down", color = "idle" },
+    { label = "Disconn", keys = "rctrl+f4", icon = "close", color = "bad" },
+]
+
+[[app."org.remmina.Remmina".groups]]
+title = "Clipboard & Host"
+color = "idle"
+buttons = [
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Refresh", keys = "f5", icon = "refresh", color = "idle" },
+    { label = "Prefs", keys = "ctrl+p", icon = "settings", color = "idle" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.moonlight_moonlight]
+lock_target = true
+aliases = [
+    "com.moonlight_stream.Moonlight",
+    "Moonlight",
+    "moonlight",
+]
+match_title = [
+    "Moonlight",
+]
+
+[[app.moonlight_moonlight.groups]]
+title = "Stream Controls"
+color = "accent"
+buttons = [
+    { label = "Stats", keys = "ctrl+alt+shift+s", icon = "activity", color = "warn" },
+    { label = "MouseCap", keys = "ctrl+alt+shift+m", icon = "gps", color = "accent" },
+    { label = "FullScrn", keys = "ctrl+alt+shift+x", icon = "gps", color = "good" },
+    { label = "SysKeys", keys = "ctrl+alt+shift+z", icon = "lock", color = "warn" },
+    { label = "Stream", keys = "enter", icon = "play", color = "good" },
+    { label = "Settings", keys = "ctrl+comma", icon = "settings", color = "idle" },
+    { label = "QuitStrm", keys = "ctrl+alt+shift+q", icon = "stop", color = "bad" },
+    { label = "ExitApp", keys = "alt+f4", icon = "close", color = "bad" },
+]
+
+[[app.moonlight_moonlight.groups]]
+title = "Host Audio & View"
+color = "good"
+buttons = [
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+    { label = "Shot", keys = "print", icon = "camera", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Left", keys = "left", icon = "left", color = "idle" },
+    { label = "Right", keys = "right", icon = "right", color = "idle" },
+]
+
+[app.spotify_spotify]
+aliases = [
+    "spotify",
+    "Spotify",
+]
+match_title = [
+    "Spotify",
+]
+
+[[app.spotify_spotify.groups]]
+title = "Playback"
+color = "good"
+buttons = [
+    { label = "Play/Pse", keys = "space", icon = "play", color = "good" },
+    { label = "Prev", keys = "ctrl+left", icon = "prev", color = "idle" },
+    { label = "Next", keys = "ctrl+right", icon = "next", color = "idle" },
+    { label = "Vol+", keys = "ctrl+up", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "ctrl+down", icon = "voldown", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+    { label = "Shuffle", keys = "ctrl+s", icon = "loop", color = "accent" },
+    { label = "Repeat", keys = "ctrl+r", icon = "refresh", color = "accent" },
+]
+
+[[app.spotify_spotify.groups]]
+title = "Library & App"
+color = "accent"
+buttons = [
+    { label = "Like", keys = "alt+shift+b", icon = "ok", color = "good" },
+    { label = "Search", keys = "ctrl+k", icon = "eye", color = "accent" },
+    { label = "Queue", keys = "alt+shift+q", icon = "list", color = "idle" },
+    { label = "Lyrics", keys = "ctrl+d", icon = "file", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "Home", keys = "alt+left", icon = "home", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "idle" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "idle" },
+]
+
+[app.clementine_clementine]
+aliases = [
+    "clementine",
+    "Clementine",
+]
+match_title = [
+    "Clementine",
+]
+
+[[app.clementine_clementine.groups]]
+title = "Playback"
+color = "good"
+buttons = [
+    { label = "Play/Pse", keys = "play", icon = "play", color = "good" },
+    { label = "Prev", keys = "prev", icon = "prev", color = "idle" },
+    { label = "Next", keys = "next", icon = "next", color = "idle" },
+    { label = "Stop", keys = "stop", icon = "stop", color = "bad" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+    { label = "Shuffle", keys = "ctrl+h", icon = "loop", color = "accent" },
+]
+
+[[app.clementine_clementine.groups]]
+title = "Playlist"
+color = "accent"
+buttons = [
+    { label = "AddFile", keys = "ctrl+o", icon = "plus", color = "good" },
+    { label = "AddDir", keys = "ctrl+shift+o", icon = "folder", color = "accent" },
+    { label = "ClearLst", keys = "ctrl+k", icon = "trash", color = "warn" },
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Repeat", keys = "ctrl+r", icon = "refresh", color = "idle" },
+    { label = "Prefs", keys = "ctrl+p", icon = "settings", color = "idle" },
+    { label = "Hide", keys = "ctrl+w", icon = "down", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Rhythmbox3"]
+aliases = [
+    "rhythmbox",
+    "Rhythmbox",
+]
+match_title = [
+    "Rhythmbox",
+]
+
+[[app."org.gnome.Rhythmbox3".groups]]
+title = "Music Playback"
+color = "good"
+buttons = [
+    { label = "Play/Pse", keys = "ctrl+space", icon = "play", color = "good" },
+    { label = "Prev", keys = "alt+left", icon = "prev", color = "idle" },
+    { label = "Next", keys = "alt+right", icon = "next", color = "idle" },
+    { label = "Shuffle", keys = "ctrl+u", icon = "loop", color = "accent" },
+    { label = "Repeat", keys = "ctrl+r", icon = "refresh", color = "accent" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+]
+
+[[app."org.gnome.Rhythmbox3".groups]]
+title = "Library"
+color = "accent"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Import", keys = "ctrl+o", icon = "download", color = "good" },
+    { label = "NewList", keys = "ctrl+n", icon = "plus", color = "idle" },
+    { label = "JumpPlay", keys = "ctrl+j", icon = "gps", color = "idle" },
+    { label = "Props", keys = "alt+enter", icon = "settings", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Showtime"]
+aliases = [
+    "showtime",
+    "Showtime",
+]
+match_title = [
+    "Showtime",
+]
+
+[[app."org.gnome.Showtime".groups]]
+title = "Video Playback"
+color = "good"
+buttons = [
+    { label = "Play/Pse", keys = "space", icon = "play", color = "good" },
+    { label = "Back10s", keys = "left", icon = "prev", color = "idle" },
+    { label = "Fwd10s", keys = "right", icon = "next", color = "idle" },
+    { label = "FullScrn", keys = "f", icon = "gps", color = "accent" },
+    { label = "Mute", keys = "m", icon = "mute", color = "bad" },
+    { label = "Vol+", keys = "up", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "down", icon = "voldown", color = "good" },
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "accent" },
+]
+
+[[app."org.gnome.Showtime".groups]]
+title = "Frame & Window"
+color = "accent"
+buttons = [
+    { label = "Shot", keys = "ctrl+alt+s", icon = "camera", color = "good" },
+    { label = "RotateR", keys = "ctrl+r", icon = "loop", color = "idle" },
+    { label = "Restore", keys = "esc", icon = "left", color = "idle" },
+    { label = "NewWin", keys = "ctrl+n", icon = "plus", color = "idle" },
+    { label = "Files", keys = "ctrl+shift+o", icon = "folder", color = "idle" },
+    { label = "PlayKey", keys = "play", icon = "play", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Snapshot"]
+aliases = [
+    "snapshot",
+    "Snapshot",
+]
+match_title = [
+    "Camera",
+]
+
+[[app."org.gnome.Snapshot".groups]]
+title = "Camera Controls"
+color = "accent"
+buttons = [
+    { label = "Shutter", keys = "space", icon = "camera", color = "good" },
+    { label = "Gallery", keys = "ctrl+g", icon = "image", color = "accent" },
+    { label = "Prefs", keys = "ctrl+comma", icon = "settings", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Loupe"]
+aliases = [
+    "loupe",
+    "Loupe",
+]
+match_title = [
+    "Image Viewer",
+]
+
+[[app."org.gnome.Loupe".groups]]
+title = "Image Viewer"
+color = "accent"
+buttons = [
+    { label = "PrevImg", keys = "left", icon = "prev", color = "idle" },
+    { label = "NextImg", keys = "right", icon = "next", color = "accent" },
+    { label = "Zoom+", keys = "plus", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "minus", icon = "minus", color = "good" },
+    { label = "FitWin", keys = "0", icon = "gps", color = "idle" },
+    { label = "RotRight", keys = "ctrl+r", icon = "loop", color = "idle" },
+    { label = "RotLeft", keys = "ctrl+shift+r", icon = "loop", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+]
+
+[[app."org.gnome.Loupe".groups]]
+title = "Actions"
+color = "idle"
+buttons = [
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "accent" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Props", keys = "alt+enter", icon = "settings", color = "idle" },
+    { label = "Print", keys = "ctrl+p", icon = "file", color = "idle" },
+    { label = "Wallpaper", keys = "ctrl+f8", icon = "image", color = "good" },
+    { label = "Trash", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Shotwell"]
+aliases = [
+    "shotwell",
+    "Shotwell",
+]
+match_title = [
+    "Shotwell",
+]
+
+[[app."org.gnome.Shotwell".groups]]
+title = "Photo Browse"
+color = "accent"
+buttons = [
+    { label = "Prev", keys = "left", icon = "prev", color = "idle" },
+    { label = "Next", keys = "right", icon = "next", color = "accent" },
+    { label = "Enhance", keys = "ctrl+e", icon = "ok", color = "good" },
+    { label = "Crop", keys = "c", icon = "edit", color = "warn" },
+    { label = "RotRight", keys = "ctrl+r", icon = "loop", color = "idle" },
+    { label = "RotLeft", keys = "ctrl+shift+r", icon = "loop", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "Trash", keys = "delete", icon = "trash", color = "bad" },
+]
+
+[[app."org.gnome.Shotwell".groups]]
+title = "Organize"
+color = "good"
+buttons = [
+    { label = "Import", keys = "ctrl+i", icon = "download", color = "good" },
+    { label = "Search", keys = "f8", icon = "eye", color = "idle" },
+    { label = "Tag", keys = "ctrl+t", icon = "edit", color = "accent" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+y", icon = "next", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.simple-scan]
+aliases = [
+    "Simple-scan",
+]
+match_title = [
+    "Document Scanner",
+]
+
+[[app.simple-scan.groups]]
+title = "Scanner"
+color = "accent"
+buttons = [
+    { label = "Scan", keys = "ctrl+1", icon = "camera", color = "good" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "NewDoc", keys = "ctrl+n", icon = "plus", color = "accent" },
+    { label = "RotLeft", keys = "leftbrace", icon = "left", color = "idle" },
+    { label = "RotRight", keys = "rightbrace", icon = "right", color = "idle" },
+    { label = "Print", keys = "ctrl+p", icon = "file", color = "idle" },
+    { label = "DelPage", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.libreoffice-writer]
+lock_target = true
+match_title = [
+    "LibreOffice Writer",
+]
+
+[[app.libreoffice-writer.groups]]
+title = "Writer Format"
+color = "accent"
+buttons = [
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Bold", keys = "ctrl+b", icon = "edit", color = "accent" },
+    { label = "Italic", keys = "ctrl+i", icon = "edit", color = "accent" },
+    { label = "Underln", keys = "ctrl+u", icon = "edit", color = "accent" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+y", icon = "next", color = "idle" },
+    { label = "FindRepl", keys = "ctrl+h", icon = "eye", color = "warn" },
+    { label = "Print", keys = "ctrl+p", icon = "file", color = "idle" },
+]
+
+[[app.libreoffice-writer.groups]]
+title = "Document"
+color = "good"
+buttons = [
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "PasteTxt", keys = "ctrl+alt+shift+v", icon = "paste", color = "good" },
+    { label = "Styles", keys = "f11", icon = "list", color = "accent" },
+    { label = "Navigatr", keys = "f5", icon = "gps", color = "idle" },
+    { label = "Spellchk", keys = "f7", icon = "ok", color = "good" },
+    { label = "CloseDoc", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.libreoffice-calc]
+lock_target = true
+match_title = [
+    "LibreOffice Calc",
+]
+
+[[app.libreoffice-calc.groups]]
+title = "Calc Sheet"
+color = "good"
+buttons = [
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Recalc", keys = "f9", icon = "refresh", color = "accent" },
+    { label = "Sum", keys = "alt+equal", icon = "plus", color = "good" },
+    { label = "Bold", keys = "ctrl+b", icon = "edit", color = "accent" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+y", icon = "next", color = "idle" },
+    { label = "FindRepl", keys = "ctrl+h", icon = "eye", color = "warn" },
+    { label = "Print", keys = "ctrl+p", icon = "file", color = "idle" },
+]
+
+[[app.libreoffice-calc.groups]]
+title = "Cells & Formula"
+color = "accent"
+buttons = [
+    { label = "EditCell", keys = "f2", icon = "edit", color = "accent" },
+    { label = "InsRow", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "DelRow", keys = "ctrl+minus", icon = "minus", color = "bad" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Date", keys = "ctrl+semicolon", icon = "bell", color = "idle" },
+    { label = "PrevTab", keys = "ctrl+pageup", icon = "prev", color = "idle" },
+    { label = "NextTab", keys = "ctrl+pagedown", icon = "next", color = "idle" },
+]
+
+[app.libreoffice-impress]
+lock_target = true
+match_title = [
+    "LibreOffice Impress",
+]
+
+[[app.libreoffice-impress.groups]]
+title = "Slideshow"
+color = "good"
+buttons = [
+    { label = "StartAll", keys = "f5", icon = "play", color = "good" },
+    { label = "FromCur", keys = "shift+f5", icon = "play", color = "accent" },
+    { label = "EndShow", keys = "esc", icon = "stop", color = "bad" },
+    { label = "PrevSld", keys = "pageup", icon = "prev", color = "idle" },
+    { label = "NextSld", keys = "pagedown", icon = "next", color = "accent" },
+    { label = "BlackScrn", keys = "b", icon = "eye", color = "warn" },
+    { label = "WhiteScrn", keys = "w", icon = "eye", color = "idle" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+]
+
+[[app.libreoffice-impress.groups]]
+title = "Edit Slides"
+color = "accent"
+buttons = [
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+y", icon = "next", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Group", keys = "ctrl+shift+g", icon = "list", color = "accent" },
+    { label = "Ungroup", keys = "ctrl+alt+shift+g", icon = "list", color = "warn" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.libreoffice-draw]
+lock_target = true
+match_title = [
+    "LibreOffice Draw",
+]
+
+[[app.libreoffice-draw.groups]]
+title = "Draw Tools"
+color = "accent"
+buttons = [
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "TextBox", keys = "f2", icon = "edit", color = "accent" },
+    { label = "PtsMode", keys = "f8", icon = "gps", color = "warn" },
+    { label = "Group", keys = "ctrl+shift+g", icon = "list", color = "good" },
+    { label = "Ungroup", keys = "ctrl+alt+shift+g", icon = "list", color = "warn" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+y", icon = "next", color = "idle" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+]
+
+[[app.libreoffice-draw.groups]]
+title = "Canvas"
+color = "idle"
+buttons = [
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "SelectAll", keys = "ctrl+a", icon = "ok", color = "idle" },
+    { label = "ZoomIn", keys = "plus", icon = "plus", color = "good" },
+    { label = "ZoomOut", keys = "minus", icon = "minus", color = "good" },
+    { label = "Print", keys = "ctrl+p", icon = "file", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.libreoffice-startcenter]
+aliases = [
+    "libreoffice-math",
+    "libreoffice",
+    "soffice.bin",
+]
+match_title = [
+    "LibreOffice",
+]
+
+[[app.libreoffice-startcenter.groups]]
+title = "LibreOffice Hub"
+color = "accent"
+buttons = [
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "accent" },
+    { label = "NewDoc", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Writer", shell = "libreoffice --writer", icon = "file", color = "accent" },
+    { label = "Calc", shell = "libreoffice --calc", icon = "list", color = "good" },
+    { label = "Impress", shell = "libreoffice --impress", icon = "image", color = "warn" },
+    { label = "Draw", shell = "libreoffice --draw", icon = "edit", color = "idle" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Papers"]
+aliases = [
+    "papers",
+    "org.gnome.Evince",
+]
+match_title = [
+    "Papers",
+    "Document Viewer",
+]
+
+[[app."org.gnome.Papers".groups]]
+title = "PDF Reader"
+color = "accent"
+buttons = [
+    { label = "PrevPage", keys = "p", icon = "prev", color = "idle" },
+    { label = "NextPage", keys = "n", icon = "next", color = "accent" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "FitPage", keys = "f", icon = "gps", color = "idle" },
+    { label = "Sidebar", keys = "f9", icon = "list", color = "idle" },
+    { label = "Present", keys = "f5", icon = "play", color = "warn" },
+]
+
+[[app."org.gnome.Papers".groups]]
+title = "Document Actions"
+color = "idle"
+buttons = [
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "accent" },
+    { label = "SaveCopy", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "RotRight", keys = "ctrl+right", icon = "loop", color = "idle" },
+    { label = "RotLeft", keys = "ctrl+left", icon = "loop", color = "idle" },
+    { label = "Print", keys = "ctrl+p", icon = "file", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Calendar"]
+aliases = [
+    "gnome-calendar",
+]
+match_title = [
+    "Calendar",
+]
+
+[[app."org.gnome.Calendar".groups]]
+title = "Calendar"
+color = "accent"
+buttons = [
+    { label = "Today", keys = "alt+t", icon = "gps", color = "good" },
+    { label = "Prev", keys = "alt+left", icon = "prev", color = "idle" },
+    { label = "Next", keys = "alt+right", icon = "next", color = "idle" },
+    { label = "NewEvent", keys = "ctrl+n", icon = "plus", color = "accent" },
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "WeekView", keys = "ctrl+1", icon = "list", color = "idle" },
+    { label = "MonthVw", keys = "ctrl+2", icon = "list", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.thunderbird_thunderbird]
+lock_target = true
+aliases = [
+    "thunderbird",
+    "org.mozilla.Thunderbird",
+]
+match_title = [
+    "Thunderbird",
+]
+
+[[app.thunderbird_thunderbird.groups]]
+title = "Mail Actions"
+color = "accent"
+buttons = [
+    { label = "GetMail", keys = "f5", icon = "download", color = "good" },
+    { label = "Compose", keys = "ctrl+n", icon = "edit", color = "accent" },
+    { label = "Reply", keys = "ctrl+r", icon = "left", color = "accent" },
+    { label = "ReplyAll", keys = "ctrl+shift+r", icon = "left", color = "warn" },
+    { label = "Forward", keys = "ctrl+l", icon = "right", color = "idle" },
+    { label = "Archive", keys = "a", icon = "save", color = "idle" },
+    { label = "MarkRead", keys = "m", icon = "ok", color = "good" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+]
+
+[[app.thunderbird_thunderbird.groups]]
+title = "Navigate & Send"
+color = "good"
+buttons = [
+    { label = "Send", keys = "ctrl+enter", icon = "upload", color = "good" },
+    { label = "NextUnrd", keys = "n", icon = "next", color = "accent" },
+    { label = "QuickFlt", keys = "ctrl+shift+k", icon = "eye", color = "idle" },
+    { label = "Search", keys = "ctrl+k", icon = "eye", color = "idle" },
+    { label = "Junk", keys = "j", icon = "warning", color = "warn" },
+    { label = "TagImpt", keys = "1", icon = "bell", color = "warn" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "CloseTab", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.transmission-gtk]
+aliases = [
+    "com.transmissionbt.transmission",
+    "transmission",
+]
+match_title = [
+    "Transmission",
+]
+
+[[app.transmission-gtk.groups]]
+title = "Torrents"
+color = "accent"
+buttons = [
+    { label = "OpenMag", keys = "ctrl+u", icon = "plus", color = "good" },
+    { label = "OpenFile", keys = "ctrl+o", icon = "folder", color = "accent" },
+    { label = "Start", keys = "ctrl+s", icon = "play", color = "good" },
+    { label = "Pause", keys = "ctrl+p", icon = "pause", color = "warn" },
+    { label = "AltSpeed", keys = "alt+s", icon = "activity", color = "warn" },
+    { label = "SelectAll", keys = "ctrl+a", icon = "ok", color = "idle" },
+    { label = "Props", keys = "alt+enter", icon = "settings", color = "idle" },
+    { label = "Remove", keys = "delete", icon = "trash", color = "bad" },
+]
+
+[app.onionshare_onionshare]
+aliases = [
+    "onionshare",
+    "OnionShare",
+]
+match_title = [
+    "OnionShare",
+]
+
+[[app.onionshare_onionshare.groups]]
+title = "OnionShare"
+color = "warn"
+buttons = [
+    { label = "Add", keys = "ctrl+o", icon = "plus", color = "good" },
+    { label = "CopyAddr", keys = "ctrl+c", icon = "copy", color = "accent" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "NewTab", keys = "ctrl+t", icon = "plus", color = "idle" },
+    { label = "CloseTab", keys = "ctrl+w", icon = "close", color = "warn" },
+    { label = "Settings", keys = "ctrl+s", icon = "settings", color = "idle" },
+    { label = "Help", keys = "f1", icon = "bell", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.mission-center_mission-center]
+aliases = [
+    "io.missioncenter.MissionCenter",
+    "mission-center",
+]
+match_title = [
+    "Mission Center",
+]
+
+[[app.mission-center_mission-center.groups]]
+title = "System Monitor"
+color = "accent"
+buttons = [
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "StopProc", keys = "delete", icon = "stop", color = "bad" },
+    { label = "PerfTab", keys = "ctrl+1", icon = "activity", color = "good" },
+    { label = "AppsTab", keys = "ctrl+2", icon = "list", color = "accent" },
+    { label = "SvcsTab", keys = "ctrl+3", icon = "settings", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."net.nokyan.Resources"]
+aliases = [
+    "resources",
+    "Resources",
+]
+match_title = [
+    "Resources",
+]
+
+[[app."net.nokyan.Resources".groups]]
+title = "Resources Monitor"
+color = "accent"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "EndProc", keys = "delete", icon = "stop", color = "bad" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Prefs", keys = "ctrl+comma", icon = "settings", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Term", shell = "x-terminal-emulator", icon = "terminal", color = "warn" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.mcontrolcenter]
+aliases = [
+    "MControlCenter",
+]
+match_title = [
+    "MControlCenter",
+]
+
+[[app.mcontrolcenter.groups]]
+title = "Laptop Power/Fan"
+color = "warn"
+buttons = [
+    { label = "NextTab", keys = "ctrl+tab", icon = "next", color = "accent" },
+    { label = "PrevTab", keys = "ctrl+shift+tab", icon = "prev", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Apply", keys = "enter", icon = "ok", color = "good" },
+    { label = "Cancel", keys = "esc", icon = "close", color = "idle" },
+    { label = "Monitor", shell = "mission-center", icon = "activity", color = "accent" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.nvidia-settings]
+aliases = [
+    "Nvidia-settings",
+]
+match_title = [
+    "NVIDIA X Server Settings",
+    "NVIDIA Settings",
+]
+
+[[app.nvidia-settings.groups]]
+title = "NVIDIA Control"
+color = "good"
+buttons = [
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Left", keys = "left", icon = "left", color = "idle" },
+    { label = "Right", keys = "right", icon = "right", color = "idle" },
+    { label = "Apply", keys = "enter", icon = "ok", color = "good" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "accent" },
+    { label = "Refresh", keys = "f5", icon = "refresh", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.deckgui]
+aliases = [
+    "deckgui.py",
+]
+match_title = [
+    "Stream Deck",
+]
+
+[[app.deckgui.groups]]
+title = "Stream Deck GUI"
+color = "accent"
+buttons = [
+    { label = "SaveAll", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Settings"]
+aliases = [
+    "gnome-control-center",
+]
+match_title = [
+    "Settings",
+]
+
+[[app."org.gnome.Settings".groups]]
+title = "GNOME Settings"
+color = "accent"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Select", keys = "enter", icon = "ok", color = "good" },
+    { label = "Cancel", keys = "esc", icon = "close", color = "idle" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.nm-connection-editor]
+match_title = [
+    "Network Connections",
+]
+
+[[app.nm-connection-editor.groups]]
+title = "Network Config"
+color = "accent"
+buttons = [
+    { label = "Add", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Edit", keys = "enter", icon = "edit", color = "accent" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Cancel", keys = "esc", icon = "close", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.DiskUtility"]
+aliases = [
+    "gnome-disks",
+]
+match_title = [
+    "Disks",
+]
+
+[[app."org.gnome.DiskUtility".groups]]
+title = "Disks Utility"
+color = "warn"
+buttons = [
+    { label = "Image", keys = "ctrl+n", icon = "drive", color = "accent" },
+    { label = "Mount", keys = "ctrl+m", icon = "play", color = "good" },
+    { label = "Benchmark", keys = "ctrl+b", icon = "activity", color = "warn" },
+    { label = "SMART", keys = "ctrl+s", icon = "ok", color = "good" },
+    { label = "Format", keys = "ctrl+shift+f", icon = "warning", color = "bad" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.baobab"]
+aliases = [
+    "baobab",
+]
+match_title = [
+    "Disk Usage Analyzer",
+]
+
+[[app."org.gnome.baobab".groups]]
+title = "Disk Analyzer"
+color = "accent"
+buttons = [
+    { label = "ScanDir", keys = "ctrl+o", icon = "folder", color = "accent" },
+    { label = "Rescan", keys = "ctrl+r", icon = "refresh", color = "good" },
+    { label = "Open", keys = "enter", icon = "folder", color = "idle" },
+    { label = "Trash", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.DejaDup"]
+aliases = [
+    "deja-dup",
+]
+match_title = [
+    "Backups",
+]
+
+[[app."org.gnome.DejaDup".groups]]
+title = "Backups"
+color = "good"
+buttons = [
+    { label = "BackUp", keys = "ctrl+b", icon = "upload", color = "good" },
+    { label = "Restore", keys = "ctrl+r", icon = "download", color = "warn" },
+    { label = "Prefs", keys = "ctrl+comma", icon = "settings", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Select", keys = "enter", icon = "ok", color = "accent" },
+    { label = "Help", keys = "f1", icon = "bell", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.FileRoller"]
+aliases = [
+    "file-roller",
+]
+match_title = [
+    "Archive Manager",
+]
+
+[[app."org.gnome.FileRoller".groups]]
+title = "Archive Tools"
+color = "accent"
+buttons = [
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "accent" },
+    { label = "Extract", keys = "ctrl+e", icon = "download", color = "good" },
+    { label = "NewArch", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "SelectAll", keys = "ctrl+a", icon = "ok", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.seahorse.Application"]
+aliases = [
+    "seahorse",
+]
+match_title = [
+    "Passwords and Keys",
+]
+
+[[app."org.gnome.seahorse.Application".groups]]
+title = "Passwords/Keys"
+color = "warn"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "NewKey", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Props", keys = "alt+enter", icon = "settings", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Sidebar", keys = "f9", icon = "list", color = "idle" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Refresh", keys = "ctrl+r", icon = "refresh", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Calculator"]
+aliases = [
+    "gnome-calculator",
+]
+match_title = [
+    "Calculator",
+]
+
+[[app."org.gnome.Calculator".groups]]
+title = "Calculator Ops"
+color = "accent"
+buttons = [
+    { label = "Clear", keys = "esc", icon = "trash", color = "bad" },
+    { label = "Bksp", keys = "backspace", icon = "left", color = "warn" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Equals", keys = "enter", icon = "ok", color = "good" },
+    { label = "ProgMode", keys = "ctrl+alt+p", icon = "code", color = "accent" },
+    { label = "BasicMode", keys = "ctrl+alt+b", icon = "app", color = "idle" },
+]
+
+[[app."org.gnome.Calculator".groups]]
+title = "Numpad & Modes"
+color = "good"
+buttons = [
+    { label = "Add (+)", keys = "kpplus", icon = "plus", color = "good" },
+    { label = "Sub (-)", keys = "kpminus", icon = "minus", color = "good" },
+    { label = "Mul (*)", keys = "kpasterisk", icon = "plus", color = "accent" },
+    { label = "Div (/)", keys = "kpslash", icon = "minus", color = "accent" },
+    { label = "SciMode", keys = "ctrl+alt+s", icon = "activity", color = "warn" },
+    { label = "FinMode", keys = "ctrl+alt+f", icon = "list", color = "idle" },
+    { label = "Help", keys = "f1", icon = "bell", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.clocks"]
+aliases = [
+    "gnome-clocks",
+]
+match_title = [
+    "Clocks",
+]
+
+[[app."org.gnome.clocks".groups]]
+title = "Clocks & Timer"
+color = "accent"
+buttons = [
+    { label = "World", keys = "alt+1", icon = "globe", color = "accent" },
+    { label = "Alarms", keys = "alt+2", icon = "bell", color = "warn" },
+    { label = "Stopwtch", keys = "alt+3", icon = "play", color = "good" },
+    { label = "Timer", keys = "alt+4", icon = "activity", color = "accent" },
+    { label = "New", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "StartStop", keys = "space", icon = "play", color = "good" },
+    { label = "Delete", keys = "delete", icon = "trash", color = "bad" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Characters"]
+match_title = [
+    "Characters",
+]
+
+[[app."org.gnome.Characters".groups]]
+title = "Characters"
+color = "accent"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Copy", keys = "enter", icon = "copy", color = "good" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Left", keys = "left", icon = "left", color = "idle" },
+    { label = "Right", keys = "right", icon = "right", color = "idle" },
+    { label = "Help", keys = "f1", icon = "bell", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.font-viewer"]
+match_title = [
+    "Fonts",
+]
+
+[[app."org.gnome.font-viewer".groups]]
+title = "Font Viewer"
+color = "accent"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Open", keys = "enter", icon = "file", color = "good" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Left", keys = "left", icon = "left", color = "idle" },
+    { label = "Right", keys = "right", icon = "right", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Logs"]
+match_title = [
+    "Logs",
+]
+
+[[app."org.gnome.Logs".groups]]
+title = "System Logs"
+color = "accent"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Export", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "PageUp", keys = "pageup", icon = "prev", color = "idle" },
+    { label = "PageDn", keys = "pagedown", icon = "next", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app."org.gnome.Yelp"]
+match_title = [
+    "Help",
+]
+
+[[app."org.gnome.Yelp".groups]]
+title = "Help Browser"
+color = "accent"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Forward", keys = "alt+right", icon = "right", color = "idle" },
+    { label = "Find", keys = "ctrl+s", icon = "eye", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "Print", keys = "ctrl+p", icon = "file", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[app.snap-store_snap-store]
+aliases = [
+    "snap-store",
+    "desktop-security-center_desktop-security-center",
+    "security_center",
+    "firmware-updater_firmware-updater",
+    "firmware-updater",
+    "make-launcher_make-launcher",
+]
+match_title = [
+    "App Center",
+    "Security Center",
+    "Firmware Updater",
+]
+
+[[app.snap-store_snap-store.groups]]
+title = "Ubuntu Store/Cfg"
+color = "accent"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Refresh", keys = "ctrl+r", icon = "refresh", color = "good" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Select", keys = "enter", icon = "ok", color = "good" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.update-manager]
+aliases = [
+    "Update-manager",
+    "gnome-language-selector",
+    "usb-creator-gtk",
+]
+match_title = [
+    "Software Updater",
+    "Language Support",
+    "Startup Disk Creator",
+]
+
+[[app.update-manager.groups]]
+title = "System Updates"
+color = "good"
+buttons = [
+    { label = "Install", keys = "enter", icon = "ok", color = "good" },
+    { label = "Details", keys = "space", icon = "list", color = "accent" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Tab", keys = "tab", icon = "right", color = "idle" },
+    { label = "Refresh", keys = "f5", icon = "refresh", color = "warn" },
+    { label = "Cancel", keys = "esc", icon = "close", color = "idle" },
+    { label = "Quit", keys = "ctrl+q", icon = "close", color = "bad" },
+]
+
+[app.steam_steam]
+aliases = [
+    "steam",
+    "steamwebhelper",
+    "Steam",
+]
+match_title = [
+    "Steam",
+]
+
+[[app.steam_steam.groups]]
+title = "Steam Navigation"
+color = "accent"
+buttons = [
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Forward", keys = "alt+right", icon = "right", color = "idle" },
+    { label = "Refresh", keys = "f5", icon = "refresh", color = "good" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "BigPic", keys = "alt+enter", icon = "gps", color = "accent" },
+    { label = "Shot", keys = "f12", icon = "camera", color = "good" },
+    { label = "Overlay", keys = "shift+tab", icon = "list", color = "warn" },
+    { label = "CloseWin", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[[app.steam_steam.groups]]
+title = "Audio & System"
+color = "good"
+buttons = [
+    { label = "Play/Pse", keys = "play", icon = "play", color = "good" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "idle" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "idle" },
+    { label = "Tasks", shell = "mission-center", icon = "activity", color = "warn" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+]
+
+[app.game-fallout-4]
+aliases = [
+    "steam_app_377160",
+    "fallout4.exe",
+    "fallout4launcher.exe",
+]
+match_title = [
+    "Fallout 4",
+]
+
+[[app.game-fallout-4.groups]]
+title = "Pip-Boy & Combat"
+color = "good"
+buttons = [
+    { label = "V.A.T.S.", keys = "q", icon = "gps", color = "good" },
+    { label = "Pip-Boy", keys = "tab", icon = "list", color = "good" },
+    { label = "Light", keys = "tab", hold_ms = 750, icon = "charge", color = "warn" },
+    { label = "Reload", keys = "r", icon = "refresh", color = "accent" },
+    { label = "Holster", keys = "r", hold_ms = 750, icon = "lock", color = "idle" },
+    { label = "Melee", keys = "lalt", icon = "warning", color = "warn" },
+    { label = "Crit/Act", keys = "space", icon = "ok", color = "good" },
+    { label = "Interact", keys = "e", icon = "play", color = "accent" },
+]
+
+[[app.game-fallout-4.groups]]
+title = "Settlement & Save"
+color = "warn"
+buttons = [
+    { label = "Workshop", keys = "v", hold_ms = 750, icon = "settings", color = "warn" },
+    { label = "3rdPers", keys = "v", icon = "eye", color = "idle" },
+    { label = "Wait", keys = "t", icon = "bell", color = "idle" },
+    { label = "AutoWalk", keys = "capslock", icon = "right", color = "idle" },
+    { label = "QSave", keys = "f5", icon = "save", color = "good" },
+    { label = "QLoad", keys = "f9", icon = "download", color = "bad" },
+    { label = "Console", keys = "tilde", icon = "terminal", color = "warn" },
+    { label = "Pause", keys = "esc", icon = "pause", color = "bad" },
+]
+
+[[app.game-fallout-4.groups]]
+title = "Favorites 1-6"
+color = "accent"
+buttons = [
+    { label = "Fav 1", keys = "1", icon = "app", color = "accent" },
+    { label = "Fav 2", keys = "2", icon = "app", color = "accent" },
+    { label = "Fav 3", keys = "3", icon = "app", color = "accent" },
+    { label = "Fav 4", keys = "4", icon = "app", color = "accent" },
+    { label = "Fav 5", keys = "5", icon = "app", color = "accent" },
+    { label = "Fav 6", keys = "6", icon = "app", color = "accent" },
+    { label = "FavMenu", keys = "f", icon = "list", color = "good" },
+    { label = "Sneak", keys = "lctrl", icon = "down", color = "idle" },
+]
+
+[[app.game-fallout-4.groups]]
+title = "More Favs & Steam"
+color = "idle"
+buttons = [
+    { label = "Fav 7", keys = "7", icon = "app", color = "accent" },
+    { label = "Fav 8", keys = "8", icon = "app", color = "accent" },
+    { label = "Fav 9", keys = "9", icon = "app", color = "accent" },
+    { label = "Fav 0", keys = "0", icon = "app", color = "accent" },
+    { label = "Overlay", keys = "shift+tab", icon = "list", color = "warn" },
+    { label = "Shot", keys = "f12", icon = "camera", color = "good" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+]
+
+[app.game-stardew-valley]
+aliases = [
+    "Stardew Valley",
+    "steam_app_413150",
+]
+match_title = [
+    "Stardew Valley",
+]
+
+[[app.game-stardew-valley.groups]]
+title = "Farm & Menus"
+color = "good"
+buttons = [
+    { label = "Inventory", keys = "e", icon = "list", color = "good" },
+    { label = "Map", keys = "m", icon = "gps", color = "accent" },
+    { label = "Journal", keys = "f", icon = "file", color = "warn" },
+    { label = "RotRow", keys = "tab", icon = "loop", color = "accent" },
+    { label = "UseTool", keys = "c", icon = "edit", color = "good" },
+    { label = "Action", keys = "x", icon = "ok", color = "accent" },
+    { label = "Chat", keys = "t", icon = "bell", color = "idle" },
+    { label = "Pause", keys = "esc", icon = "pause", color = "bad" },
+]
+
+[[app.game-stardew-valley.groups]]
+title = "Hotbar 1-8"
+color = "accent"
+buttons = [
+    { label = "Slot 1", keys = "1", icon = "app", color = "accent" },
+    { label = "Slot 2", keys = "2", icon = "app", color = "accent" },
+    { label = "Slot 3", keys = "3", icon = "app", color = "accent" },
+    { label = "Slot 4", keys = "4", icon = "app", color = "accent" },
+    { label = "Slot 5", keys = "5", icon = "app", color = "accent" },
+    { label = "Slot 6", keys = "6", icon = "app", color = "accent" },
+    { label = "Slot 7", keys = "7", icon = "app", color = "accent" },
+    { label = "Slot 8", keys = "8", icon = "app", color = "accent" },
+]
+
+[[app.game-stardew-valley.groups]]
+title = "Hotbar 9-12 & Social"
+color = "warn"
+buttons = [
+    { label = "Slot 9", keys = "9", icon = "app", color = "accent" },
+    { label = "Slot 10", keys = "0", icon = "app", color = "accent" },
+    { label = "Slot 11", keys = "minus", icon = "app", color = "accent" },
+    { label = "Slot 12", keys = "equal", icon = "app", color = "accent" },
+    { label = "Emote", keys = "y", icon = "bell", color = "warn" },
+    { label = "Overlay", keys = "shift+tab", icon = "list", color = "warn" },
+    { label = "Shot", keys = "f12", icon = "camera", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+]
+
+[app.game-satisfactory]
+aliases = [
+    "steam_app_526870",
+    "factorygamesteam-win64-shipping.exe",
+    "factorygamesteam.exe",
+]
+match_title = [
+    "Satisfactory",
+]
+
+[[app.game-satisfactory.groups]]
+title = "Build & Scan"
+color = "warn"
+buttons = [
+    { label = "Build", keys = "q", icon = "plus", color = "good" },
+    { label = "Dismantle", keys = "f", icon = "trash", color = "bad" },
+    { label = "ScanPing", keys = "v", icon = "gps", color = "accent" },
+    { label = "ScanWheel", keys = "v", hold_ms = 700, icon = "gps", color = "warn" },
+    { label = "Light", keys = "b", icon = "charge", color = "warn" },
+    { label = "LockHolo", keys = "h", icon = "lock", color = "accent" },
+    { label = "QckSearch", keys = "n", icon = "eye", color = "idle" },
+    { label = "Inventory", keys = "tab", icon = "list", color = "good" },
+]
+
+[[app.game-satisfactory.groups]]
+title = "Factory & World"
+color = "accent"
+buttons = [
+    { label = "Map", keys = "m", icon = "gps", color = "accent" },
+    { label = "Codex", keys = "o", icon = "file", color = "idle" },
+    { label = "PhotoMode", keys = "p", icon = "camera", color = "idle" },
+    { label = "Reload", keys = "r", icon = "refresh", color = "warn" },
+    { label = "Hotbar 1", keys = "1", icon = "app", color = "accent" },
+    { label = "Hotbar 2", keys = "2", icon = "app", color = "accent" },
+    { label = "Hotbar 3", keys = "3", icon = "app", color = "accent" },
+    { label = "Pause", keys = "esc", icon = "pause", color = "bad" },
+]
+
+[[app.game-satisfactory.groups]]
+title = "Hotbar 4-0 & Nudge"
+color = "good"
+buttons = [
+    { label = "Hotbar 4", keys = "4", icon = "app", color = "accent" },
+    { label = "Hotbar 5", keys = "5", icon = "app", color = "accent" },
+    { label = "Hotbar 6", keys = "6", icon = "app", color = "accent" },
+    { label = "Hotbar 7", keys = "7", icon = "app", color = "accent" },
+    { label = "Hotbar 8", keys = "8", icon = "app", color = "accent" },
+    { label = "Hotbar 9", keys = "9", icon = "app", color = "accent" },
+    { label = "Hotbar 0", keys = "0", icon = "app", color = "accent" },
+    { label = "Shot", keys = "f12", icon = "camera", color = "good" },
+]
+
+[[app.game-satisfactory.groups]]
+title = "Nudge & Steam"
+color = "idle"
+buttons = [
+    { label = "NudgeUp", keys = "up", icon = "up", color = "idle" },
+    { label = "NudgeDn", keys = "down", icon = "down", color = "idle" },
+    { label = "NudgeLt", keys = "left", icon = "left", color = "idle" },
+    { label = "NudgeRt", keys = "right", icon = "right", color = "idle" },
+    { label = "Overlay", keys = "shift+tab", icon = "list", color = "warn" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+]
+
+[app.game-railgrade]
+aliases = [
+    "steam_app_1355090",
+    "railgrade-win64-shipping.exe",
+    "railgrade.exe",
+    "RAILGRADE.desktop",
+]
+match_title = [
+    "RAILGRADE",
+]
+
+[[app.game-railgrade.groups]]
+title = "Track & Build"
+color = "accent"
+buttons = [
+    { label = "Pause/Ply", keys = "space", icon = "play", color = "good" },
+    { label = "Speed 1x", keys = "1", icon = "play", color = "idle" },
+    { label = "Speed 2x", keys = "2", icon = "next", color = "accent" },
+    { label = "Speed 3x", keys = "3", icon = "charge", color = "warn" },
+    { label = "FlowView", keys = "tab", icon = "eye", color = "accent" },
+    { label = "Rotate", keys = "r", icon = "loop", color = "accent" },
+    { label = "Bulldoze", keys = "x", icon = "trash", color = "bad" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "warn" },
+]
+
+[[app.game-railgrade.groups]]
+title = "Camera & Elevation"
+color = "idle"
+buttons = [
+    { label = "RotLeft", keys = "q", icon = "left", color = "idle" },
+    { label = "RotRight", keys = "e", icon = "right", color = "idle" },
+    { label = "Elev+", keys = "pageup", icon = "up", color = "good" },
+    { label = "Elev-", keys = "pagedown", icon = "down", color = "warn" },
+    { label = "Cancel", keys = "esc", icon = "close", color = "bad" },
+    { label = "Shot", keys = "f12", icon = "camera", color = "good" },
+    { label = "Overlay", keys = "shift+tab", icon = "list", color = "warn" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+]
+
+[app.game-aethus]
+aliases = [
+    "steam_app_2541530",
+    "striketheearth-win64-shipping.exe",
+    "striketheearth.exe",
+    "AETHUS.desktop",
+]
+match_title = [
+    "AETHUS",
+    "Aethus",
+    "StrikeTheEarth",
+]
+
+[[app.game-aethus.groups]]
+title = "Scanner & Core"
+color = "good"
+buttons = [
+    { label = "Scanner", keys = "x", icon = "gps", color = "accent" },
+    { label = "Radial", keys = "tab", hold_ms = 650, icon = "charge", color = "warn" },
+    { label = "Interact", keys = "e", icon = "play", color = "good" },
+    { label = "Build", keys = "b", icon = "plus", color = "good" },
+    { label = "Rotate", keys = "r", icon = "loop", color = "idle" },
+    { label = "Dismantle", keys = "f", icon = "trash", color = "bad" },
+    { label = "Upgrades", keys = "t", icon = "settings", color = "warn" },
+    { label = "Pause", keys = "esc", icon = "pause", color = "bad" },
+]
+
+[[app.game-aethus.groups]]
+title = "Inventory & Maps"
+color = "accent"
+buttons = [
+    { label = "Inventory", keys = "i", icon = "folder", color = "accent" },
+    { label = "Map", keys = "m", icon = "gps", color = "good" },
+    { label = "PDA", keys = "p", icon = "file", color = "accent" },
+    { label = "Journal", keys = "j", icon = "edit", color = "warn" },
+    { label = "SortInv", keys = "s", icon = "loop", color = "idle" },
+    { label = "DropItem", keys = "delete", icon = "close", color = "bad" },
+    { label = "CamLeft", keys = "q", icon = "left", color = "idle" },
+    { label = "TabMenu", keys = "tab", icon = "list", color = "idle" },
+]
+
+[[app.game-aethus.groups]]
+title = "Tool Slots 1-8"
+color = "warn"
+buttons = [
+    { label = "Slot 1", keys = "1", icon = "app", color = "accent" },
+    { label = "Slot 2", keys = "2", icon = "app", color = "accent" },
+    { label = "Slot 3", keys = "3", icon = "app", color = "accent" },
+    { label = "Slot 4", keys = "4", icon = "app", color = "accent" },
+    { label = "Slot 5", keys = "5", icon = "app", color = "accent" },
+    { label = "Detectr6", keys = "6", icon = "gps", color = "good" },
+    { label = "Slot 7", keys = "7", icon = "app", color = "accent" },
+    { label = "Slot 8", keys = "8", icon = "app", color = "accent" },
+]
+
+[[app.game-aethus.groups]]
+title = "Slots 9-0 & Steam"
+color = "idle"
+buttons = [
+    { label = "Slot 9", keys = "9", icon = "app", color = "accent" },
+    { label = "Slot 10", keys = "0", icon = "app", color = "accent" },
+    { label = "Overlay", keys = "shift+tab", icon = "list", color = "warn" },
+    { label = "Shot", keys = "f12", icon = "camera", color = "good" },
+    { label = "Play/Pse", keys = "play", icon = "play", color = "good" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+]
+
+[app.game-jedi-survivor]
+aliases = [
+    "steam_app_1774580",
+    "jedisurvivor.exe",
+    "STAR WARS Jedi Survivor.desktop",
+]
+match_title = [
+    "Jedi: Survivor",
+    "Jedi Survivor",
+]
+
+[[app.game-jedi-survivor.groups]]
+title = "Combat & Traversal"
+color = "accent"
+buttons = [
+    { label = "Interact", keys = "e", icon = "play", color = "good" },
+    { label = "Heal", keys = "q", icon = "plus", color = "good" },
+    { label = "BD-1", keys = "r", icon = "charge", color = "accent" },
+    { label = "Special", keys = "f", icon = "ok", color = "warn" },
+    { label = "Stance 1", keys = "x", icon = "prev", color = "accent" },
+    { label = "Stance 2", keys = "c", icon = "next", color = "accent" },
+    { label = "Holomap", keys = "m", icon = "gps", color = "accent" },
+    { label = "Pause", keys = "esc", icon = "pause", color = "bad" },
+]
+
+[[app.game-jedi-survivor.groups]]
+title = "Force & Steam"
+color = "warn"
+buttons = [
+    { label = "Push", keys = "2", icon = "right", color = "accent" },
+    { label = "Pull", keys = "3", icon = "left", color = "accent" },
+    { label = "Slow/Ult", keys = "4", icon = "charge", color = "warn" },
+    { label = "Lift", keys = "lctrl+f", icon = "up", color = "good" },
+    { label = "Confuse", keys = "lctrl+z", icon = "loop", color = "warn" },
+    { label = "Overlay", keys = "shift+tab", icon = "list", color = "warn" },
+    { label = "Shot", keys = "f12", icon = "camera", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+]
+
+[app.lm-studio]
+lock_target = true
+aliases = [
+    "lm-studio",
+    "LM Studio",
+]
+match_title = [
+    "LM Studio",
+]
+
+[[app.lm-studio.groups]]
+title = "LM Studio Views"
+color = "accent"
+buttons = [
+    { label = "NewChat", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "ChatTab", keys = "ctrl+1", icon = "edit", color = "accent" },
+    { label = "ModelsTab", keys = "ctrl+2", icon = "folder", color = "accent" },
+    { label = "ServerTab", keys = "ctrl+3", icon = "wifi", color = "good" },
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "DevLogs", keys = "ctrl+shift+l", icon = "terminal", color = "warn" },
+    { label = "Settings", keys = "ctrl+comma", icon = "settings", color = "idle" },
+    { label = "Close", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[[app.lm-studio.groups]]
+title = "Prompt & Edit"
+color = "idle"
+buttons = [
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "Clear", keys = "ctrl+k", icon = "trash", color = "warn" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Quit", keys = "alt+f4", icon = "close", color = "bad" },
+]
+
+[app.gpt4all]
+lock_target = true
+aliases = [
+    "chat",
+    "GPT4All",
+]
+match_title = [
+    "GPT4All",
+]
+
+[[app.gpt4all.groups]]
+title = "GPT4All Chat"
+color = "accent"
+buttons = [
+    { label = "NewChat", keys = "ctrl+n", icon = "plus", color = "good" },
+    { label = "Send", keys = "enter", icon = "upload", color = "good" },
+    { label = "Newline", keys = "shift+enter", icon = "down", color = "idle" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Settings", keys = "ctrl+comma", icon = "settings", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+    { label = "Quit", keys = "alt+f4", icon = "close", color = "bad" },
+]
+
+[app.openrgb]
+lock_target = true
+aliases = [
+    "OpenRGB",
+    "openrgb",
+]
+match_title = [
+    "OpenRGB",
+]
+
+[[app.openrgb.groups]]
+title = "OpenRGB Controls"
+color = "accent"
+buttons = [
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Left", keys = "left", icon = "left", color = "idle" },
+    { label = "Right", keys = "right", icon = "right", color = "idle" },
+    { label = "NextTab", keys = "ctrl+tab", icon = "next", color = "accent" },
+    { label = "Apply", keys = "enter", icon = "ok", color = "good" },
+    { label = "Rescan", keys = "f5", icon = "refresh", color = "warn" },
+    { label = "Quit", keys = "alt+f4", icon = "close", color = "bad" },
+]
+
+[app.satisfactory-mod-manager]
+lock_target = true
+aliases = [
+    "SatisfactoryModManager",
+    "Satisfactory Mod Manager",
+]
+match_title = [
+    "Satisfactory Mod Manager",
+]
+
+[[app.satisfactory-mod-manager.groups]]
+title = "Mod Manager"
+color = "warn"
+buttons = [
+    { label = "Search", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Reload", keys = "ctrl+r", icon = "refresh", color = "good" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Select", keys = "enter", icon = "ok", color = "good" },
+    { label = "Launch", shell = "steam steam://rungameid/526870", icon = "play", color = "good" },
+    { label = "Quit", keys = "alt+f4", icon = "close", color = "bad" },
+]
+
+[app.cherry-utility]
+lock_target = true
+aliases = [
+    "wine-Programs-CHERRY KEYS (x64)",
+    "wine-CHERRY Utility Software",
+    "CHERRY KEYS",
+    "CHERRY Utility Software",
+]
+match_title = [
+    "CHERRY Utility",
+    "CHERRY KEYS",
+]
+
+[[app.cherry-utility.groups]]
+title = "CHERRY Peripherals"
+color = "accent"
+buttons = [
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "Up", keys = "up", icon = "up", color = "idle" },
+    { label = "Down", keys = "down", icon = "down", color = "idle" },
+    { label = "Left", keys = "left", icon = "left", color = "idle" },
+    { label = "Right", keys = "right", icon = "right", color = "idle" },
+    { label = "Apply", keys = "enter", icon = "ok", color = "good" },
+    { label = "Cancel", keys = "esc", icon = "close", color = "idle" },
+    { label = "Quit", keys = "alt+f4", icon = "close", color = "bad" },
 ]
 
 [launcher]
@@ -367,7 +2754,31 @@ configured = true
 color = "accent"
 icon = "globe"
 id = "microsoft-edge.desktop"
-label = "Microsoft Edg"
+label = "Edge"
+
+[[launcher.apps]]
+color = "warn"
+icon = "globe"
+id = "firefox_firefox.desktop"
+label = "Firefox"
+
+[[launcher.apps]]
+color = "accent"
+icon = "charge"
+id = "msedge-gdfaincndogidkdcdkhapmbffkckdkhn-Default.desktop"
+label = "Gemini"
+
+[[launcher.apps]]
+color = "accent"
+icon = "code"
+id = "msedge-gnhihbofldlelcplbnnhleggcpokcegb-Default.desktop"
+label = "code-server"
+
+[[launcher.apps]]
+color = "idle"
+icon = "drive"
+id = "msedge-abnfpfhjmipcnaibcolbacfhgfcmjjbn-Default.desktop"
+label = "OneDrive"
 
 [[launcher.apps]]
 color = "accent"
@@ -382,6 +2793,144 @@ id = "org.gnome.Ptyxis.desktop"
 label = "Terminal"
 
 [[launcher.apps]]
+color = "accent"
+icon = "code"
+id = "code_code.desktop"
+label = "VS Code"
+
+[[launcher.apps]]
+color = "accent"
+icon = "charge"
+id = "antigravity-ide.desktop"
+label = "Antigrav IDE"
+
+[[launcher.apps]]
+color = "accent"
+icon = "code"
+id = "dev.zed.Zed.desktop"
+label = "Zed"
+
+[[launcher.apps]]
+color = "good"
+icon = "code"
+id = "arduino_arduino.desktop"
+label = "Arduino"
+
+[[launcher.apps]]
+color = "good"
+icon = "code"
+id = "thonny_thonny.desktop"
+label = "Thonny"
+
+[[launcher.apps]]
+color = "accent"
+icon = "upload"
+id = "gitkraken_gitkraken.desktop"
+label = "GitKraken"
+
+[[launcher.apps]]
+color = "warn"
+icon = "settings"
+id = "freecad_freecad.desktop"
+label = "FreeCAD"
+
+[[launcher.apps]]
+color = "accent"
+icon = "app"
+id = "wine-Programs-ELEGOO SatelLite-ELEGOO SatelLite.desktop"
+label = "SatelLite"
+
+[[launcher.apps]]
+color = "warn"
+icon = "activity"
+id = "wine-Programs-UVtools-UVtools.desktop"
+label = "UVtools"
+
+[[launcher.apps]]
+color = "accent"
+icon = "app"
+id = "wine-Programs-Voxeldance Tango-Voxeldance Tango 4.0.desktop"
+label = "Tango"
+
+[[launcher.apps]]
+color = "accent"
+icon = "play"
+id = "steam_steam.desktop"
+label = "Steam"
+
+[[launcher.apps]]
+color = "good"
+icon = "gps"
+id = "AETHUS.desktop"
+label = "AETHUS"
+
+[[launcher.apps]]
+color = "warn"
+icon = "settings"
+id = "Satisfactory.desktop"
+label = "Satisfactory"
+
+[[launcher.apps]]
+color = "good"
+icon = "gps"
+id = "Fallout 4.desktop"
+label = "Fallout 4"
+
+[[launcher.apps]]
+color = "accent"
+icon = "play"
+id = "RAILGRADE.desktop"
+label = "RAILGRADE"
+
+[[launcher.apps]]
+color = "accent"
+icon = "charge"
+id = "STAR WARS Jedi Survivor.desktop"
+label = "Jedi Survivr"
+
+[[launcher.apps]]
+color = "good"
+icon = "play"
+id = "Stardew Valley.desktop"
+label = "Stardew"
+
+[[launcher.apps]]
+color = "good"
+icon = "music"
+id = "spotify_spotify.desktop"
+label = "Spotify"
+
+[[launcher.apps]]
+color = "accent"
+icon = "wifi"
+id = "org.remmina.Remmina.desktop"
+label = "Remmina"
+
+[[launcher.apps]]
+color = "accent"
+icon = "play"
+id = "moonlight_moonlight.desktop"
+label = "Moonlight"
+
+[[launcher.apps]]
+color = "accent"
+icon = "activity"
+id = "virt-manager.desktop"
+label = "Virt-Mgr"
+
+[[launcher.apps]]
+color = "warn"
+icon = "activity"
+id = "mission-center_mission-center.desktop"
+label = "MissionCtr"
+
+[[launcher.apps]]
+color = "warn"
+icon = "settings"
+id = "mcontrolcenter.desktop"
+label = "MControl"
+
+[[launcher.apps]]
 color = "good"
 icon = "activity"
 id = "htop.desktop"
@@ -389,24 +2938,18 @@ label = "Htop"
 
 [[launcher.apps]]
 color = "accent"
-icon = "code"
-id = "code_code.desktop"
-label = "Visual Studio"
-
-[[launcher.apps]]
-color = "idle"
 icon = "settings"
-id = "nm-connection-editor.desktop"
-label = "Advanced Netw"
+id = "deckgui.desktop"
+label = "Deck Editor"
 
 [[launcher.apps]]
 color = "accent"
-icon = "app"
-id = "org.gnome.Calculator.desktop"
-label = "Calculator"
+icon = "terminal"
+id = "antigravity.desktop"
+label = "Antigravity"
 
 [[launcher.apps]]
-color = "good"
-icon = "music"
-id = "org.gnome.Snapshot.desktop"
-label = "Camera"
+color = "pink"
+icon = "settings"
+id = "org.gnome.DiskUtility.desktop"
+label = "Disks"

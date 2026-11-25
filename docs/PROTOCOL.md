@@ -24,6 +24,9 @@ It operates identically across three transport layers:
 | `DECK SELECT\t` | `<profileId>` | Pins a specific profile override (e.g. `DECK SELECT\tcode`). Send empty (`DECK SELECT\t`) to revert to dynamic "Follow focus". |
 | `DECK PONG` | `<nonce>` | Heartbeat reply echoing host's `DECK PING <nonce>`. |
 | `DECK BATT` | `<pct> <mv>` | Optional battery telemetry from device. |
+| `DECK UNLOCK PAIR` | `<tabletEphPubB64>` | Initiates ECDH P-256 pairing to obtain `host_pub` and encrypted `wire_key`. Allowed directly over USB or during a tray pairing window over BLE/Wi-Fi. |
+| `DECK UNLOCK CHALLENGE` | `<seq>` | Requests a single-use 16-byte challenge nonce before transmitting an unlock envelope. |
+| `DECK UNLOCK EXEC` | `<seq> <envelopeB64>` | Sends challenge-bound AES-256-GCM wire envelope containing `delay_ms` + host-encrypted ECIES password ciphertext (`C_inner`). |
 
 ---
 
@@ -47,6 +50,8 @@ It operates identically across three transport layers:
 | `DECK LAUNCHER BEGIN\t` | `<autoReturn>\t<count>` | Starts transmission of App Launcher catalog (`autoReturn` is `1` to return to the Stream Deck page after launching or `0` to stay on Launcher; `count` up to 72). |
 | `DECK LAUNCHER ITEM\t` | `<idx>\t<label>\t<icon>\t<color>` | Pushes one App Launcher grid slot (`idx` 0–71) with display label, icon identifier, and semantic/hex color. |
 | `DECK LAUNCHER END` | *(none)* | Commits the staged App Launcher catalog on the device. |
+| `DECK UNLOCK PAIRED` | `<hostPubB64> <hostEphPubB64> <wrappedWireB64>` | Pairing response containing the host's P-256 public key and ECDH-wrapped 32-byte `wire_key`. |
+| `DECK UNLOCK NONCE` | `<seq> <challengeB64>` | Single-use 16-byte challenge nonce (10s TTL) for `DECK UNLOCK EXEC`. |
 | `DECK BYE` | `<reason>` | Daemon closing connection or rejecting device (e.g., host busy). |
 
 ---

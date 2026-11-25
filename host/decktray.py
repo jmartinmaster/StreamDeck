@@ -78,14 +78,16 @@ MI_STATUS = 1
 MI_FOCUS = 2
 MI_SEP1 = 3
 MI_AUTO = 4
+MI_PROFILES_MENU = 10
 MI_SEP2 = 5
 MI_EDIT = 6
 MI_QUIT = 7
 MI_BLE = 8
 MI_USB = 9
+MI_PAIR = 97
 MI_WIFI = 98
 MI_SYNC = 99
-MI_PROFILE_BASE = 10  # profile i -> menu id MI_PROFILE_BASE + i
+MI_PROFILE_BASE = 1000  # profile i -> menu id MI_PROFILE_BASE + i
 
 
 def _load_post_save_command():
@@ -121,61 +123,91 @@ class DBusMenu(ServiceInterface):
         self.revision = 1
 
     # -- helpers ------------------------------------------------------------
-    def _items(self):
-        """Return ordered list of (id, props, clickable) menu items."""
+    def _tree(self):
+        """Return list of (id, props, children) menu nodes from the root."""
         app = self.app
-        items = []
+        nodes = []
 
-        items.append((MI_STATUS, {
+        nodes.append((MI_STATUS, {
             "label": app.status_line(),
             "enabled": False,
-        }))
+        }, []))
 
         focus = app.focus_line()
         if focus:
-            items.append((MI_FOCUS, {"label": focus, "enabled": False}))
+            nodes.append((MI_FOCUS, {"label": focus, "enabled": False}, []))
 
-        items.append((MI_SEP1, {"type": "separator"}))
+        nodes.append((MI_SEP1, {"type": "separator"}, []))
 
         auto_checked = app.daemon_online and app.override == ""
-        items.append((MI_AUTO, {
+        nodes.append((MI_AUTO, {
             "label": "Follow focus (auto)",
             "toggle-type": "radio",
             "toggle-state": 1 if auto_checked else 0,
             "enabled": app.daemon_online,
-        }))
-        for i, profile in enumerate(app.profiles):
-            items.append((MI_PROFILE_BASE + i, {
+        }, []))
+
+        profile_children = [
+            (MI_PROFILE_BASE + i, {
                 "label": profile,
                 "toggle-type": "radio",
                 "toggle-state": 1 if app.override == profile else 0,
                 "enabled": app.daemon_online,
-            }))
+            }, [])
+            for i, profile in enumerate(app.profiles)
+        ]
+        if profile_children:
+            active_tag = app.override or "auto"
+            nodes.append((MI_PROFILES_MENU, {
+                "label": f"Profiles ({len(profile_children)} \u2014 {active_tag})",
+                "children-display": "submenu",
+                "enabled": app.daemon_online,
+            }, profile_children))
 
-        items.append((MI_SEP2, {"type": "separator"}))
-        items.append((MI_BLE, {
+        nodes.append((MI_SEP2, {"type": "separator"}, []))
+        nodes.append((MI_BLE, {
             "label": "BLE connections (wireless GATT)",
             "toggle-type": "checkmark",
             "toggle-state": 1 if app.status.get("ble", "0") == "1" else 0,
             "enabled": app.daemon_online,
-        }))
-        items.append((MI_USB, {
+        }, []))
+        nodes.append((MI_USB, {
             "label": "USB connections (uncheck to release port)",
             "toggle-type": "checkmark",
             "toggle-state": 1 if app.status.get("usb", "0") == "1" else 0,
             "enabled": app.daemon_online,
-        }))
-        items.append((MI_WIFI, {
+        }, []))
+        nodes.append((MI_WIFI, {
             "label": "WiFi connections (TCP/mDNS listener)",
             "toggle-type": "checkmark",
             "toggle-state": 1 if app.status.get("wifi", "0") == "1" else 0,
             "enabled": app.daemon_online,
-        }))
-        items.append((MI_EDIT, {"label": "Edit profiles\u2026"}))
+        }, []))
+        pairing_on = app.status.get("unlock_pairing", "0") == "1"
+        nodes.append((MI_PAIR, {
+            "label": "Allow unlock pairing (60s)" if not pairing_on else "Unlock pairing active (click to cancel)",
+            "toggle-type": "checkmark",
+            "toggle-state": 1 if pairing_on else 0,
+            "enabled": app.daemon_online,
+        }, []))
+        nodes.append((MI_EDIT, {"label": "Edit profiles\u2026"}, []))
         if _load_post_save_command():
-            items.append((MI_SYNC, {"label": "Run sync hook"}))
-        items.append((MI_QUIT, {"label": "Quit tray"}))
-        return items
+            nodes.append((MI_SYNC, {"label": "Run sync hook"}, []))
+        nodes.append((MI_QUIT, {"label": "Quit tray"}, []))
+        return nodes
+
+    def _items(self):
+        """Return flattened list of (id, props) menu items."""
+        flat = []
+
+        def walk(nodes):
+            for item_id, props, children in nodes:
+                flat.append((item_id, props))
+                if children:
+                    walk(children)
+
+        walk(self._tree())
+        return flat
 
     @staticmethod
     def _variant_props(props, requested):
@@ -189,6 +221,8 @@ class DBusMenu(ServiceInterface):
         merged = {}
         for key, (sig, default) in defaults.items():
             merged[key] = (sig, props.get(key, default))
+        if "children-display" in props:
+            merged["children-display"] = ("s", props["children-display"])
         if "toggle-type" in props:
             merged["toggle-type"] = ("s", props["toggle-type"])
             merged["toggle-state"] = ("i", props.get("toggle-state", 0))
@@ -197,6 +231,29 @@ class DBusMenu(ServiceInterface):
                 continue
             out[key] = Variant(sig, value)
         return out
+
+    def _encode_nodes(self, nodes, recursion_depth, requested):
+        if recursion_depth == 0:
+            return []
+        next_depth = -1 if recursion_depth < 0 else recursion_depth - 1
+        return [
+            Variant("(ia{sv}av)", [
+                item_id,
+                self._variant_props(props, requested),
+                self._encode_nodes(children, next_depth, requested),
+            ])
+            for item_id, props, children in nodes
+        ]
+
+    @staticmethod
+    def _find_node(nodes, target_id):
+        for item_id, props, children in nodes:
+            if item_id == target_id:
+                return (item_id, props, children)
+            found = DBusMenu._find_node(children, target_id)
+            if found is not None:
+                return found
+        return None
 
     def layout_changed(self):
         self.revision += 1
@@ -227,20 +284,19 @@ class DBusMenu(ServiceInterface):
     def GetLayout(self, parent_id: "i", recursion_depth: "i",
                   property_names: "as") -> "u(ia{sv}av)":
         requested = set(property_names) if property_names else None
+        tree = self._tree()
         if parent_id == 0:
-            children = []
-            if recursion_depth != 0:
-                for item_id, props in self._items():
-                    children.append(Variant("(ia{sv}av)", [
-                        item_id, self._variant_props(props, requested), []]))
+            children = self._encode_nodes(tree, recursion_depth, requested)
             root_props = {}
             if requested is None or "children-display" in requested:
                 root_props["children-display"] = Variant("s", "submenu")
             return [self.revision, [0, root_props, children]]
-        for item_id, props in self._items():
-            if item_id == parent_id:
-                return [self.revision,
-                        [item_id, self._variant_props(props, requested), []]]
+        node = self._find_node(tree, parent_id)
+        if node is not None:
+            item_id, props, children = node
+            encoded_children = self._encode_nodes(children, recursion_depth, requested)
+            return [self.revision,
+                    [item_id, self._variant_props(props, requested), encoded_children]]
         return [self.revision, [parent_id, {}, []]]
 
     @method()
@@ -684,6 +740,9 @@ class TrayApp:
             key, method = transport_toggles[item_id]
             await self._toggle_transport(key, method)
             return
+        if item_id == MI_PAIR:
+            await self._toggle_unlock_pairing()
+            return
         idx = item_id - MI_PROFILE_BASE
         if 0 <= idx < len(self.profiles):
             await self._set_override(self.profiles[idx])
@@ -694,6 +753,15 @@ class TrayApp:
             await self._deckd_call(method, "b", [enable])
         except Exception as exc:
             log.warning("%s(%r) failed: %s", method, enable, exc)
+            self._set_offline()
+
+    async def _toggle_unlock_pairing(self):
+        enable = self.status.get("unlock_pairing", "0") != "1"
+        seconds = 60 if enable else 0
+        try:
+            await self._deckd_call("EnableUnlockPairing", "u", [seconds])
+        except Exception as exc:
+            log.warning("EnableUnlockPairing(%r) failed: %s", seconds, exc)
             self._set_offline()
 
     async def _set_override(self, profile):

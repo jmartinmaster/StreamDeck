@@ -33,6 +33,7 @@ deckd.py. Thread-safety contract:
 import asyncio
 import logging
 import threading
+import time
 
 log = logging.getLogger("deckd")
 
@@ -80,6 +81,10 @@ if HAVE_DBUS:
         def SetWifiEnabled(self, enabled: 'b'):  # noqa: F821
             self._control.set_wifi_enabled(enabled)
 
+        @method()
+        def EnableUnlockPairing(self, seconds: 'u') -> 'b':  # noqa: F821
+            return self._control.enable_unlock_pairing(seconds)
+
         @signal()
         def StatusChanged(self) -> 'a{ss}':  # noqa: F722
             return self._control.status()
@@ -99,6 +104,7 @@ class DeckControl:
         self._ble_enabled = bool(ble_enabled)
         self._usb_enabled = bool(usb_enabled)
         self._wifi_enabled = bool(wifi_enabled)
+        self._unlock_pairing_until = 0.0
         self._status = {
             "transport": "none",
             "active_profile": "default",
@@ -109,6 +115,7 @@ class DeckControl:
             "ble": "0",
             "usb": "1" if self._usb_enabled else "0",
             "wifi": "1" if self._wifi_enabled else "0",
+            "unlock_pairing": "0",
         }
         self._loop = None
         self._interface = None
@@ -159,11 +166,31 @@ class DeckControl:
         log.info("WiFi connections %s", "enabled" if enabled else "disabled")
         self.publish(wifi="1" if enabled else "0")
 
+    def enable_unlock_pairing(self, seconds=60):
+        dur = max(0, min(int(seconds), 300))
+        with self._lock:
+            self._unlock_pairing_until = (time.monotonic() + dur) if dur > 0 else 0.0
+        active = dur > 0
+        log.info("Unlock pairing %s", f"enabled for {dur}s" if active else "disabled")
+        self.publish(unlock_pairing="1" if active else "0")
+        return active
+
+    def is_unlock_pairing_active(self):
+        with self._lock:
+            active = time.monotonic() < self._unlock_pairing_until
+            if not active and self._status.get("unlock_pairing") == "1":
+                self._status["unlock_pairing"] = "0"
+            return active
+
     def publish(self, **fields):
         """Update the status snapshot and emit StatusChanged."""
         with self._lock:
             self._status.update({k: str(v) for k, v in fields.items()})
             self._status["override"] = self._override
+            if "unlock_pairing" not in fields:
+                self._status["unlock_pairing"] = (
+                    "1" if time.monotonic() < self._unlock_pairing_until else "0"
+                )
         loop, interface = self._loop, self._interface
         if loop is not None and interface is not None:
             loop.call_soon_threadsafe(interface.StatusChanged)
@@ -175,7 +202,11 @@ class DeckControl:
 
     def status(self):
         with self._lock:
-            return dict(self._status)
+            snap = dict(self._status)
+            snap["unlock_pairing"] = (
+                "1" if time.monotonic() < self._unlock_pairing_until else "0"
+            )
+            return snap
 
     def set_override(self, profile):
         with self._lock:

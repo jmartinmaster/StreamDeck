@@ -42,15 +42,21 @@ class PackageTests(unittest.TestCase):
             self.assertIn("Architecture: amd64", metadata)
             self.assertIn("python3-dbus-next", metadata)
             self.assertIn("python3-evdev", metadata)
+            self.assertIn("python3-cryptography", metadata)
+            self.assertIn("python3-pyqt6", metadata)
+            self.assertIn("python3-qtpy", metadata)
+            self.assertIn("python3-tomli-w", metadata)
             self.assertIn("x-terminal-emulator", metadata)
             self.assertNotIn(str(Path.home()), metadata)
             payload = root / "payload"
             subprocess.run(["dpkg-deb", "--extract", str(package), str(payload)], check=True)
             files = {str(path.relative_to(payload)) for path in payload.rglob("*")
                      if path.is_file()}
-            self.assertEqual(len(files), 17)
+            self.assertEqual(len(files), 21)
+            self.assertIn("usr/lib/mmesp32-deckd/unlock_crypto.py", files)
+            self.assertIn("usr/lib/mmesp32-deckd/deckgui.py", files)
             self.assertFalse(any(".venv" in path or "__pycache__" in path for path in files))
-            for command in ("deckd", "decktray", "deckd-user"):
+            for command in ("deckd", "decktray", "deckgui", "deckd-user"):
                 path = payload / "usr/bin" / command
                 self.assertTrue(os.access(path, os.X_OK))
                 subprocess.run(["sh", "-n", str(path)], check=True)
@@ -68,8 +74,9 @@ class PackageTests(unittest.TestCase):
                 cwd=payload / "usr/lib/mmesp32-deckd", env=environment,
                 check=True, capture_output=True, text=True)
             self.assertEqual(result.stdout.strip(), str(profiles))
-            desktop = payload / "usr/share/applications/mmesp32-decktray.desktop"
-            subprocess.run(["desktop-file-validate", str(desktop)], check=True)
+            for desktop_name in ("mmesp32-decktray.desktop", "deckgui.desktop"):
+                desktop = payload / "usr/share/applications" / desktop_name
+                subprocess.run(["desktop-file-validate", str(desktop)], check=True)
             unit = (payload / "usr/lib/systemd/user/deckd.service").read_text()
             self.assertIn("WantedBy=graphical-session.target", unit)
             self.assertNotIn(".venv", unit)

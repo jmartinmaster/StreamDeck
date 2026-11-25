@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Stream Deck Editor
+GenericName=Macro & Profile Editor
+Comment=Visual profile and settings editor for MMEsp32 Stream Deck
+Exec=/usr/bin/deckgui
+Icon=preferences-desktop-keyboard
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=streamdeck;macro;profile;deckd;hotkey;

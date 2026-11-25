@@ -21,15 +21,11 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$HERE/../.." && pwd)"
+REPO_ROOT="$(cd "$HERE/.." && pwd)"
 UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 UNIT_PATH="$UNIT_DIR/deckd.service"
 EXT_UUID="deckfocus@mmesp32"
-if [ -d "$HERE/gnome-extension/$EXT_UUID" ]; then
-    EXT_SRC="$HERE/gnome-extension/$EXT_UUID"
-else
-    EXT_SRC="$REPO_ROOT/tools/gnome-extension/$EXT_UUID"
-fi
+EXT_SRC="$HERE/gnome-extension/$EXT_UUID"
 EXT_DST="$HOME/.local/share/gnome-shell/extensions/$EXT_UUID"
 
 echo "==> deckd install dir: $HERE"
@@ -37,7 +33,10 @@ echo "==> deckd install dir: $HERE"
 # 1. Virtualenv + dependencies (idempotent).
 if [ ! -x "$HERE/.venv/bin/python" ]; then
     echo "==> creating virtualenv at $HERE/.venv"
-    python3 -m venv "$HERE/.venv"
+    if ! python3 -m venv "$HERE/.venv"; then
+        echo "ERROR: failed to create virtualenv. Install python3-venv (e.g. sudo apt install python3-venv) and retry." >&2
+        exit 1
+    fi
 else
     echo "==> virtualenv already present"
 fi
@@ -78,18 +77,21 @@ Next steps — run these yourself when ready:
   # 1. Enable and start the daemon as a user service:
   systemctl --user enable --now deckd.service
 
-  # 2. Grant /dev/uinput access for 'keys' actions (one-time, needs sudo):
+  # 2. Grant /dev/uinput and USB serial access (one-time, needs sudo):
   sudo install -m 0644 "$HERE/99-deckd-uinput.rules" /etc/udev/rules.d/99-deckd-uinput.rules
   sudo udevadm control --reload-rules
+  sudo modprobe uinput
   sudo udevadm trigger --name-match=uinput
-  sudo usermod -aG input "\$USER"    # then log out and back in
+  sudo usermod -aG input,dialout "\$USER"    # then log out and back in
 
   # 3. Install the GNOME focus extension (then log out/in to load it):
   mkdir -p "$(dirname "$EXT_DST")"
+  rm -rf "$EXT_DST"
   cp -r "$EXT_SRC" "$EXT_DST"
   gnome-extensions enable "$EXT_UUID"
 
   # 4. Start the tray applet now, and/or enable it at login:
   "$HERE/.venv/bin/python" "$HERE/decktray.py" &
+  mkdir -p "\${XDG_CONFIG_HOME:-\$HOME/.config}/autostart"
   cp "$TRAY_DESKTOP" "\${XDG_CONFIG_HOME:-\$HOME/.config}/autostart/decktray.desktop"
 EOF

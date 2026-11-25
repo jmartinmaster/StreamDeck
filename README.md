@@ -22,7 +22,7 @@ No external cloud services, bridges, or Raspberry Pi servers are required. The d
 * **Multi-Page Grids & Portable App Launcher:** Supports multiple macro pages (`<` / `>`) plus a dedicated **App Launcher** grid (up to 72 apps, 24 per page) populated automatically from standard Linux `.desktop` files or customized via `deckgui`, with a `< Back` button and optional auto-return after launching.
 * **Profile Overrides:** Easily toggle between dynamic **Follow focus** and pinning a specific app layout using the touchscreen dropdown or the PC system tray applet.
 * **System Tray Applet (`decktray`):** Pure D-Bus `StatusNotifierItem` tray icon (GTK-free to guarantee crash-free operation on Wayland).
-* **Visual Profile & Macro Editor (`deckgui`):** Full PySide6/Qt desktop configurator with an interactive 16-button preview, live keyboard shortcut recorder, and syntax-highlighted TOML editor.
+* **Visual Profile & Macro Editor (`deckgui`):** Full PyQt6/QtPy desktop configurator with an interactive 16-button preview, live keyboard shortcut recorder, and syntax-highlighted TOML editor.
 * **Hardware Portability:** Clean PlatformIO firmware base that compiles for ESP32-S3 capacitive touch displays (LVGL 8.3), physical pushbutton matrices, or headless serial controllers.
 
 ---
@@ -35,7 +35,7 @@ flowchart TD
         subgraph DaemonSuite["Host Daemon & Tools"]
             D["deckd (Python Daemon)"]
             T["decktray (D-Bus Status Applet)"]
-            G["deckgui (PySide6 Config Editor)"]
+            G["deckgui (PyQt6 Config Editor)"]
             C["deckcontrol (CLI Utility)"]
             P["profiles.toml"]
         end
@@ -76,7 +76,7 @@ Stream_Deck/
 │   ├── desktop_apps.py            # Portable Linux XDG .desktop app discovery & launch helpers
 │   ├── ble_deck.py                # BlueZ BLE GATT server (NUS profile)
 │   ├── decktray.py                # System tray status applet (pure D-Bus)
-│   ├── deckgui.py                 # PySide6 visual configuration editor
+│   ├── deckgui.py                 # PyQt6 visual configuration editor
 │   ├── deckcontrol.py             # CLI control utility
 │   ├── profiles.toml              # Button profiles & action definitions
 │   ├── requirements.txt           # Python dependencies
@@ -124,26 +124,43 @@ Stream_Deck/
 
 ### Step 1: Host Installation (Linux Workstation)
 
+#### Option A: Debian Package (Ubuntu 26.04 amd64 — Recommended)
+Build and install the `.deb` package (see [host/packaging/README.md](host/packaging/README.md) for full details):
+```bash
+bash host/packaging/build-deb.sh 1.3.0 dist
+sudo apt install ./dist/mmesp32-deckd_1.3.0_amd64.deb
+sudo usermod -aG input,dialout "$USER"
+```
+Log out and back in, then run (without `sudo`):
+```bash
+deckd-user enable
+```
+
+#### Option B: Script Installer (From Source)
 1. **Navigate to the host directory and run the installer:**
    ```bash
    cd host
    chmod +x install.sh
    ./install.sh
    ```
-   *This automatically sets up a Python virtual environment in `host/.venv`, installs dependencies (`pyserial`, `evdev`, `dbus-next`, `PyQt6`), renders the systemd unit file, and configures the desktop launchers.*
+   *This automatically sets up a Python virtual environment in `host/.venv`, installs dependencies (`pyserial`, `evdev`, `dbus-next`, `zeroconf`, `cryptography`, `PyQt6`, `qtpy`, `tomli-w`), renders the systemd unit file, and configures the desktop launchers.*
 
-2. **Configure `/dev/uinput` Permissions (Required for Key Emulation):**
-   To simulate keyboard shortcuts without requiring root permissions, install the udev rule:
+2. **Configure `/dev/uinput` and USB Serial Permissions:**
+   To simulate keyboard shortcuts and access USB serial without root permissions, install the udev rule and add your user to `input` and `dialout`:
    ```bash
    sudo install -m 0644 99-deckd-uinput.rules /etc/udev/rules.d/
    sudo udevadm control --reload-rules
+   sudo modprobe uinput
    sudo udevadm trigger --name-match=uinput
-   sudo usermod -aG input "$USER"
+   sudo usermod -aG input,dialout "$USER"
    ```
    *(Log out and back in to apply the group change)*
 
-3. **Enable the GNOME Shell Window Focus Extension:**
+3. **Install and Enable the GNOME Shell Window Focus Extension:**
    ```bash
+   mkdir -p ~/.local/share/gnome-shell/extensions
+   rm -rf ~/.local/share/gnome-shell/extensions/deckfocus@mmesp32
+   cp -r gnome-extension/deckfocus@mmesp32 ~/.local/share/gnome-shell/extensions/
    gnome-extensions enable deckfocus@mmesp32
    ```
    *(On Wayland, log out and back in once so GNOME Shell loads the newly copied extension)*
@@ -170,36 +187,46 @@ Stream_Deck/
 
 ### Step 2: Device Firmware Setup (PlatformIO)
 
-The `firmware/` directory contains a modular PlatformIO project configured for three modes:
+> **Tip:** If `deckd` is already running, pause USB polling first (via the tray's USB checkbox or `deckd-user release-usb`) so PlatformIO can access `/dev/ttyUSB0`.
+
+The `firmware/` directory contains a modular PlatformIO project with 4MB-safe defaults for ESP32-S3 and classic ESP32 boards (see [docs/HARDWARE_GUIDE.md](docs/HARDWARE_GUIDE.md) for flash/PSRAM and driver notes):
 
 ```bash
 cd firmware
 ```
 
-#### Environment 1: ESP32-S3 Capacitive Touchscreen (Recommended)
-Configured for ESP32-S3 panels (such as CrowPanel 5.0" / 7.0" 800×480 with GT911 touch):
+#### Environment 1: ESP32-S3 Capacitive Touchscreen (`esp32s3_ble_touch`)
+LVGL 8.3 touchscreen UI + NimBLE/Serial/Wi-Fi protocol engine for ESP32-S3 panels (such as CrowPanel 5.0"/7.0" or Sunton panels):
 ```bash
 pio run -e esp32s3_ble_touch -t upload
 ```
-* **What happens:** The device boots directly into the 16-button LVGL touch interface, starts scanning for `DeckD-<hostname>`, connects wirelessly via BLE, and downloads the current active profile layout.
+* **Important:** Add your board's display and touch driver initialization (e.g., LovyanGFX / `Arduino_GFX` + GT911) in `firmware/src/main.cpp` right after `lv_init()`. Without a display driver registered, the firmware still boots safely and runs the BLE/protocol stack in headless mode.
 
-#### Environment 2: Generic ESP32 with Physical Pushbuttons (BLE)
-Configured for any ESP32 with physical switches wired to GPIOs:
+#### Environment 2: Headless / Physical Pushbuttons over BLE (`esp32s3_ble_buttons`, `esp32_ble_buttons`)
+Works out of the box on any ESP32-S3 or classic ESP32 devkit (uses GPIO 0 / onboard BOOT button by default, plus an interactive Serial CLI):
 ```bash
+# ESP32-S3:
+pio run -e esp32s3_ble_buttons -t upload
+
+# Classic ESP32:
 pio run -e esp32_ble_buttons -t upload
 ```
-* **What happens:** The device connects via BLE and fires button actions when physical switches are triggered.
-
-#### Environment 3: USB Serial CDC (Wired / Headless)
-Configured for standard USB cable connection without Bluetooth:
-```bash
-pio run -e esp32_serial -t upload
-```
-* **What happens:** Communicates directly over USB serial at 115200 baud. You can monitor and test commands interactively:
+* **Interactive Serial CLI (115200 baud):**
   ```bash
   pio device monitor -b 115200
-  # Type: press 0, press 1, launcher 0, next, prev, scan, status
+  # Type: status, scan, press 0, launcher 0, next, prev
   ```
+
+#### Environment 3: Wired USB Serial (`esp32s3_serial`, `esp32_serial`)
+Communicates directly with `deckd` over USB Serial at 115200 baud without Bluetooth:
+```bash
+# ESP32-S3:
+pio run -e esp32s3_serial -t upload
+
+# Classic ESP32:
+pio run -e esp32_serial -t upload
+```
+* **Note:** USB Serial (`UART0`) carries the `DECK` protocol directly to `deckd`; close `pio device monitor` so `deckd` can open the port.
 
 #### Testing the Firmware Parser Locally
 You can test and verify the embedded protocol parsing logic on your PC with your native compiler:

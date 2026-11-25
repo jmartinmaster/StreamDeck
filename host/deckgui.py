@@ -2267,6 +2267,9 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         color = self.ins_color.currentText().strip()
 
         data = {}
+        prev = self.buttons[self.selected_button_index].data if hasattr(self.buttons[self.selected_button_index], "data") else {}
+        if isinstance(prev, dict) and "hold_ms" in prev:
+            data["hold_ms"] = prev["hold_ms"]
         if lbl:
             data["label"] = lbl
         if act_val:

@@ -19,7 +19,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE="$(cd "$HERE/.." && pwd)"
-VERSION="${1:-1.2.1}"
+VERSION="${1:-1.3.0}"
 OUTPUT="${2:-$PWD}"
 if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
     echo "Version must be numeric, for example 1.0.0" >&2
@@ -32,11 +32,11 @@ trap 'rm -rf -- "$STAGE"' EXIT
 
 install -d "$STAGE/DEBIAN" "$STAGE/usr/lib/mmesp32-deckd" \
     "$STAGE/usr/share/mmesp32-deckd" "$STAGE/usr/share/doc/mmesp32-deckd"
-for module in deckd.py deckcontrol.py decktray.py ble_deck.py desktop_apps.py; do
+for module in deckd.py deckcontrol.py decktray.py deckgui.py ble_deck.py desktop_apps.py unlock_crypto.py; do
     install -m 644 "$SOURCE/$module" "$STAGE/usr/lib/mmesp32-deckd/"
 done
 install -m 644 "$SOURCE/profiles.toml" "$STAGE/usr/share/mmesp32-deckd/"
-for command in deckd decktray deckd-user; do
+for command in deckd decktray deckgui deckd-user; do
     install -D -m 755 "$HERE/$command" "$STAGE/usr/bin/$command"
 done
 for unit in deckd.service decktray.service; do
@@ -44,6 +44,8 @@ for unit in deckd.service decktray.service; do
 done
 install -D -m 644 "$HERE/decktray.desktop" \
     "$STAGE/usr/share/applications/mmesp32-decktray.desktop"
+install -D -m 644 "$HERE/deckgui.desktop" \
+    "$STAGE/usr/share/applications/deckgui.desktop"
 install -D -m 644 "$SOURCE/99-deckd-uinput.rules" \
     "$STAGE/usr/lib/udev/rules.d/99-deckd-uinput.rules"
 install -D -m 644 "$HERE/modules-load.conf" \
@@ -60,7 +62,7 @@ Architecture: amd64
 Maintainer: MMEsp32 contributors <noreply@localhost>
 Section: utils
 Priority: optional
-Depends: python3 (>= 3.11), python3-serial, python3-evdev, python3-dbus-next, python3-zeroconf, bluez, systemd, udev, kmod, xdg-utils, x-terminal-emulator
+Depends: python3 (>= 3.11), python3-serial, python3-evdev, python3-dbus-next, python3-zeroconf, python3-cryptography, python3-pyqt6, python3-qtpy, python3-tomli-w, bluez, systemd, udev, kmod, xdg-utils, x-terminal-emulator
 Recommends: gnome-shell (>= 50), gnome-shell (<< 51), gnome-shell-ubuntu-extensions, nautilus
 Installed-Size: $(du -sk "$STAGE/usr" | cut -f1)
 Description: MMEsp32 shortcut deck daemon and desktop tray

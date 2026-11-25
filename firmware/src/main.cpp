@@ -44,12 +44,24 @@ void setup() {
     deck_client_start();
 
 #ifdef USE_LVGL_UI
-    Serial.println("[main] Initializing LVGL Deck UI...");
-    // Initialize your display and touch driver here before calling deck_ui_create
-    deck_ui_create(lv_scr_act());
+    Serial.println("[main] Initializing LVGL...");
+    lv_init();
+    // Initialize your board's display and touch driver here (e.g. LovyanGFX /
+    // Arduino_GFX + lv_disp_drv_register + lv_indev_drv_register) before
+    // deck_ui_create() is called.
+    if (lv_disp_get_default() != nullptr) {
+        deck_ui_create(lv_scr_act());
+    } else {
+        Serial.println("[main] WARNING: No LVGL display driver registered in main.cpp.");
+        Serial.println("[main] Running protocol stack in headless mode (see docs/HARDWARE_GUIDE.md).");
+    }
 #else
     Serial.println("[main] Running in Headless / Hardware Buttons mode.");
-    Serial.println("[main] Commands: 'press <0-15>', 'next', 'prev', 'scan'");
+#if DECK_TRANSPORT_BLE
+    Serial.println("[main] Serial CLI commands: 'press <0-15>', 'launcher <0-71>', 'next', 'prev', 'scan', 'status'");
+#else
+    Serial.println("[main] USB Serial transport active (DECK protocol on UART0 at 115200 baud).");
+#endif
 #endif
 
     if (BUTTON_PIN_0 >= 0) {
@@ -62,15 +74,18 @@ void loop() {
     deck_client_loop();
 
 #ifdef USE_LVGL_UI
-    // 2. Handle LVGL timer and sync UI
-    lv_timer_handler();
-    static uint32_t last_ui_update = 0;
-    if (millis() - last_ui_update > 200) {
-        last_ui_update = millis();
-        deck_ui_update();
+    // 2. Handle LVGL timer and sync UI (only when a display driver is registered)
+    if (lv_disp_get_default() != nullptr) {
+        lv_timer_handler();
+        static uint32_t last_ui_update = 0;
+        if (millis() - last_ui_update > 200) {
+            last_ui_update = millis();
+            deck_ui_update();
+        }
     }
 #else
-    // 3. Serial CLI test helper for headless / non-display devices
+#if DECK_TRANSPORT_BLE
+    // 3. Serial CLI test helper for headless BLE devices
     if (Serial.available()) {
         String cmd = Serial.readStringUntil('\n');
         cmd.trim();
@@ -95,6 +110,7 @@ void loop() {
                           st.linkState, st.focusApp, st.focusTitle, st.page, st.pageCount, ln.count);
         }
     }
+#endif
 
     // 4. Sample hardware button pin if configured
     if (BUTTON_PIN_0 >= 0) {

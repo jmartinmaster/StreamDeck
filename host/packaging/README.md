@@ -5,7 +5,7 @@
 Run on each Ubuntu desktop:
 
 ```bash
-sudo apt install ./mmesp32-deckd_1.2.1_amd64.deb
+sudo apt install ./mmesp32-deckd_1.3.0_amd64.deb
 sudo usermod -aG input,dialout "$USER"
 ```
 
@@ -151,9 +151,10 @@ Logs: `journalctl --user -u deckd -u decktray`.
 From the source checkout (no root, pip, or network access required):
 
 ```bash
-bash host/packaging/build-deb.sh 1.2.1 /path/to/output
+bash host/packaging/build-deb.sh 1.3.0 /path/to/output
 ```
 
-The package contains only the daemon, tray, default profiles, GNOME extension,
-launchers, service units, udev/module configuration and this guide. It does not
-include your virtualenv, firmware, credentials, or personal configuration.
+The package contains only the daemon, tray, visual profile editor (`deckgui`),
+default profiles, GNOME extension, launchers, service units, udev/module
+configuration and this guide. It does not include your virtualenv, firmware,
+credentials, or personal configuration.

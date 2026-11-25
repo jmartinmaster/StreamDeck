@@ -55,8 +55,8 @@ from dbus_next.service import signal as dbus_signal  # noqa: E402
 
 import decktray  # noqa: E402
 from decktray import (  # noqa: E402
-    MENU_PATH, MI_AUTO, MI_EDIT, MI_PROFILE_BASE, MI_QUIT, MI_STATUS,
-    SNI_PATH, TrayApp,
+    MENU_PATH, MI_AUTO, MI_EDIT, MI_PROFILE_BASE, MI_PROFILES_MENU,
+    MI_QUIT, MI_STATUS, SNI_PATH, TrayApp,
 )
 
 PID = os.getpid()
@@ -171,11 +171,20 @@ async def get_layout(bus, dest):
     revision, root = reply.body
     items = {}
     order = []
-    for child in root[2]:
-        item_id, props, _children = child.value
-        items[item_id] = {k: v.value for k, v in props.items()}
-        order.append(item_id)
-    return revision, root, items, order
+    submenus = {}
+
+    def walk(children_variants, parent_list):
+        for child in children_variants:
+            item_id, props, nested = child.value
+            items[item_id] = {k: v.value for k, v in props.items()}
+            parent_list.append(item_id)
+            if nested:
+                sub = []
+                submenus[item_id] = sub
+                walk(nested, sub)
+
+    walk(root[2], order)
+    return revision, root, items, order, submenus
 
 
 async def click(bus, dest, item_id):
@@ -250,7 +259,7 @@ async def amain():
 
         # (b) initial layout ----------------------------------------------
         print("[2] GetLayout structure")
-        revision, root, items, order = await get_layout(client_bus, tray)
+        revision, root, items, order, submenus = await get_layout(client_bus, tray)
         check(root[1]["children-display"].value == "submenu",
               "root has children-display=submenu")
         check(items[MI_STATUS]["label"] == "USB \u00b7 default",
@@ -266,17 +275,26 @@ async def amain():
               and items[MI_AUTO]["toggle-type"] == "radio"
               and items[MI_AUTO]["toggle-state"] == 1,
               "auto radio present and checked (no override)")
+        check(items[MI_PROFILES_MENU].get("children-display") == "submenu",
+              "profiles submenu declares children-display=submenu")
+        profile_sub = submenus.get(MI_PROFILES_MENU, [])
+        check(len(profile_sub) == len(PROFILES),
+              "all profiles placed inside Profiles submenu")
         for i, profile in enumerate(PROFILES):
             item = items[MI_PROFILE_BASE + i]
             check(item["label"] == profile
                   and item["toggle-type"] == "radio"
                   and item["toggle-state"] == 0,
                   f"profile radio '{profile}' present, unchecked")
+            check(profile_sub[i] == MI_PROFILE_BASE + i,
+                  f"profile '{profile}' nested under Profiles submenu")
         check(items[MI_EDIT]["label"] == "Edit profiles\u2026",
               "'Edit profiles…' present")
         check(items[MI_QUIT]["label"] == "Quit tray", "'Quit tray' present")
-        check(order.index(MI_AUTO) < order.index(MI_PROFILE_BASE),
-              "auto radio precedes profile radios")
+        check(order.index(MI_AUTO) < order.index(MI_PROFILES_MENU),
+              "auto radio precedes Profiles submenu")
+        check(MI_PROFILE_BASE not in order,
+              "profile items kept out of root menu so controls stay visible")
         icon = await get_sni_prop(client_bus, tray, "IconName")
         check(icon == decktray.ICON_CONNECTED,
               "IconName = connected icon while connected=1")
@@ -331,7 +349,7 @@ async def amain():
         }
         deckd.StatusChanged(dict(deckd.status))
         await wait_for(layout_updated, "LayoutUpdated signal")
-        revision2, _root, items, _order = await get_layout(client_bus, tray)
+        revision2, _root, items, _order, _submenus = await get_layout(client_bus, tray)
         check(revision2 > revision, "layout revision bumped")
         check(items[MI_STATUS]["label"] == f"WiFi \u00b7 {target}",
               "status line reads 'WiFi · <profile>'")

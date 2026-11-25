@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import fnmatch
 import logging
 import math
 import queue
@@ -83,6 +84,19 @@ except ImportError:  # pragma: no cover - running outside tools/deckd
     from .deckcontrol import DeckControl  # type: ignore[no-redef]
 
 try:
+    from unlock_crypto import UnlockKeyStore
+
+    HAVE_UNLOCK_CRYPTO = True
+except ImportError:  # pragma: no cover - optional dependency fallback
+    try:
+        from .unlock_crypto import UnlockKeyStore  # type: ignore[no-redef]
+
+        HAVE_UNLOCK_CRYPTO = True
+    except ImportError:
+        UnlockKeyStore = None  # type: ignore[assignment,misc]
+        HAVE_UNLOCK_CRYPTO = False
+
+try:
     from zeroconf import ServiceInfo, Zeroconf
 
     HAVE_ZEROCONF = True
@@ -104,9 +118,21 @@ except ImportError:  # pragma: no cover - optional dependency
 log = logging.getLogger("deckd")
 
 PAGE_SIZE = 16
+MAX_PROFILE_ID_BYTES = 63
+MAX_PROFILE_CATALOG_BYTES = 4096
 HEARTBEAT_INTERVAL = 5.0
 RECONNECT_DELAY = 2.0
 ACTIVATE_SETTLE = 0.25  # seconds to let GNOME finish raising a lock_target app
+DEFAULT_KEY_HOLD_S = 0.090  # ~90 ms standard key press duration for desktop & game compatibility
+CONTAINER_APP_IDS = frozenset({
+    "steam_steam",
+    "steam",
+    "steamwebhelper",
+    "wine",
+    "wine-preloader",
+    "wine64-preloader",
+    "bottles",
+})
 
 TCP_PORT = 4650
 TCP_READ_TIMEOUT = 0.2
@@ -122,9 +148,17 @@ FOCUS_RETRY_INTERVAL = 10.0
 
 MODIFIER_KEYS = {
     "ctrl": "KEY_LEFTCTRL",
+    "lctrl": "KEY_LEFTCTRL",
+    "rctrl": "KEY_RIGHTCTRL",
     "shift": "KEY_LEFTSHIFT",
+    "lshift": "KEY_LEFTSHIFT",
+    "rshift": "KEY_RIGHTSHIFT",
     "alt": "KEY_LEFTALT",
+    "lalt": "KEY_LEFTALT",
+    "ralt": "KEY_RIGHTALT",
     "super": "KEY_LEFTMETA",
+    "lsuper": "KEY_LEFTMETA",
+    "rsuper": "KEY_RIGHTMETA",
     "meta": "KEY_LEFTMETA",
 }
 
@@ -137,6 +171,9 @@ KEY_ALIASES = {
     "space": "KEY_SPACE",
     "backspace": "KEY_BACKSPACE",
     "delete": "KEY_DELETE",
+    "del": "KEY_DELETE",
+    "insert": "KEY_INSERT",
+    "ins": "KEY_INSERT",
     "up": "KEY_UP",
     "down": "KEY_DOWN",
     "left": "KEY_LEFT",
@@ -144,25 +181,90 @@ KEY_ALIASES = {
     "home": "KEY_HOME",
     "end": "KEY_END",
     "pageup": "KEY_PAGEUP",
+    "pgup": "KEY_PAGEUP",
     "pagedown": "KEY_PAGEDOWN",
+    "pgdn": "KEY_PAGEDOWN",
+    "capslock": "KEY_CAPSLOCK",
+    "caps": "KEY_CAPSLOCK",
+    "numlock": "KEY_NUMLOCK",
+    "scrolllock": "KEY_SCROLLLOCK",
+    "pause": "KEY_PAUSE",
+    "break": "KEY_PAUSE",
+    "menu": "KEY_COMPOSE",
+    "apps": "KEY_COMPOSE",
     "volup": "KEY_VOLUMEUP",
     "voldown": "KEY_VOLUMEDOWN",
     "mute": "KEY_MUTE",
     "play": "KEY_PLAYPAUSE",
+    "stop": "KEY_STOPCD",
     "next": "KEY_NEXTSONG",
     "prev": "KEY_PREVIOUSSONG",
+    "print": "KEY_SYSRQ",
     "printscreen": "KEY_SYSRQ",
+    "prtsc": "KEY_SYSRQ",
+    "prtscr": "KEY_SYSRQ",
+    "sysrq": "KEY_SYSRQ",
     "minus": "KEY_MINUS",
+    "-": "KEY_MINUS",
     "equal": "KEY_EQUAL",
+    "plus": "KEY_KPPLUS",
+    "=": "KEY_EQUAL",
     "comma": "KEY_COMMA",
     "period": "KEY_DOT",
+    "dot": "KEY_DOT",
+    ".": "KEY_DOT",
     "slash": "KEY_SLASH",
+    "/": "KEY_SLASH",
+    "backslash": "KEY_BACKSLASH",
+    "\\": "KEY_BACKSLASH",
+    "semicolon": "KEY_SEMICOLON",
+    ";": "KEY_SEMICOLON",
+    "apostrophe": "KEY_APOSTROPHE",
+    "quote": "KEY_APOSTROPHE",
+    "'": "KEY_APOSTROPHE",
+    "leftbrace": "KEY_LEFTBRACE",
+    "lbracket": "KEY_LEFTBRACE",
+    "[": "KEY_LEFTBRACE",
+    "rightbrace": "KEY_RIGHTBRACE",
+    "rbracket": "KEY_RIGHTBRACE",
+    "]": "KEY_RIGHTBRACE",
     "grave": "KEY_GRAVE",
+    "backtick": "KEY_GRAVE",
+    "tilde": "KEY_GRAVE",
+    "`": "KEY_GRAVE",
+    "~": "KEY_GRAVE",
+    "kp0": "KEY_KP0",
+    "kp1": "KEY_KP1",
+    "kp2": "KEY_KP2",
+    "kp3": "KEY_KP3",
+    "kp4": "KEY_KP4",
+    "kp5": "KEY_KP5",
+    "kp6": "KEY_KP6",
+    "kp7": "KEY_KP7",
+    "kp8": "KEY_KP8",
+    "kp9": "KEY_KP9",
+    "numpad0": "KEY_KP0",
+    "numpad1": "KEY_KP1",
+    "numpad2": "KEY_KP2",
+    "numpad3": "KEY_KP3",
+    "numpad4": "KEY_KP4",
+    "numpad5": "KEY_KP5",
+    "numpad6": "KEY_KP6",
+    "numpad7": "KEY_KP7",
+    "numpad8": "KEY_KP8",
+    "numpad9": "KEY_KP9",
+    "kpplus": "KEY_KPPLUS",
+    "kpminus": "KEY_KPMINUS",
+    "kpasterisk": "KEY_KPASTERISK",
+    "kpslash": "KEY_KPSLASH",
+    "kpdot": "KEY_KPDOT",
+    "kpenter": "KEY_KPENTER",
+    "kpequal": "KEY_KPEQUAL",
 }
 
 
 def key_token_to_code(token: str) -> int:
-    token = token.lower()
+    token = token.strip().lower()
     if token in MODIFIER_KEYS:
         name = MODIFIER_KEYS[token]
     elif token in KEY_ALIASES:
@@ -179,37 +281,212 @@ def key_token_to_code(token: str) -> int:
     return code
 
 
+_UNSHIFTED_ASCII = {
+    " ": "KEY_SPACE",
+    "-": "KEY_MINUS",
+    "=": "KEY_EQUAL",
+    "[": "KEY_LEFTBRACE",
+    "]": "KEY_RIGHTBRACE",
+    "\\": "KEY_BACKSLASH",
+    ";": "KEY_SEMICOLON",
+    "'": "KEY_APOSTROPHE",
+    "`": "KEY_GRAVE",
+    ",": "KEY_COMMA",
+    ".": "KEY_DOT",
+    "/": "KEY_SLASH",
+}
+
+_SHIFTED_ASCII = {
+    "!": "KEY_1",
+    "@": "KEY_2",
+    "#": "KEY_3",
+    "$": "KEY_4",
+    "%": "KEY_5",
+    "^": "KEY_6",
+    "&": "KEY_7",
+    "*": "KEY_8",
+    "(": "KEY_9",
+    ")": "KEY_0",
+    "_": "KEY_MINUS",
+    "+": "KEY_EQUAL",
+    "{": "KEY_LEFTBRACE",
+    "}": "KEY_RIGHTBRACE",
+    "|": "KEY_BACKSLASH",
+    ":": "KEY_SEMICOLON",
+    '"': "KEY_APOSTROPHE",
+    "~": "KEY_GRAVE",
+    "<": "KEY_COMMA",
+    ">": "KEY_DOT",
+    "?": "KEY_SLASH",
+}
+
+
+def char_to_evdev(ch: str) -> tuple[int, bool]:
+    """Map one printable US-QWERTY ASCII character to (evdev keycode, shift)."""
+    if len(ch) != 1:
+        raise ValueError("expected single character")
+    if "a" <= ch <= "z":
+        name, shift = f"KEY_{ch.upper()}", False
+    elif "A" <= ch <= "Z":
+        name, shift = f"KEY_{ch}", True
+    elif "0" <= ch <= "9":
+        name, shift = f"KEY_{ch}", False
+    elif ch in _UNSHIFTED_ASCII:
+        name, shift = _UNSHIFTED_ASCII[ch], False
+    elif ch in _SHIFTED_ASCII:
+        name, shift = _SHIFTED_ASCII[ch], True
+    else:
+        raise ValueError(f"unsupported character code {ord(ch):#x}")
+    code = getattr(ecodes, name, None)
+    if code is None:
+        raise ValueError(f"unmapped key: {name}")
+    return code, shift
+
+
+def _keyboard_uinput_events() -> dict[int, list[int]]:
+    """Build a pure keyboard EV_KEY capability list (no mouse/gamepad BTN_* codes)."""
+    if not HAVE_EVDEV:
+        return {}
+    key_codes = sorted({
+        code for name, code in ecodes.ecodes.items()
+        if name.startswith("KEY_") and isinstance(code, int)
+        and 0 < code < ecodes.KEY_CNT
+        and name not in ("KEY_MAX", "KEY_CNT", "KEY_MIN_INTERESTING")
+    })
+    return {ecodes.EV_KEY: key_codes}
+
+
 class KeyInjector:
     """Virtual keyboard backed by /dev/uinput."""
 
     def __init__(self) -> None:
         self._uinput = None
+        self._lock = threading.Lock()
+        self._last_uinput_try = 0.0
         if not HAVE_EVDEV:
             log.warning("python-evdev not installed; 'keys' actions disabled")
             return
+        self._open_uinput_locked(initial=True)
+
+    def _open_uinput_locked(self, initial: bool = False) -> bool:
+        """Lazily open /dev/uinput if needed so daemon recovers after login ACLs settle."""
+        if self._uinput is not None:
+            return True
+        if not HAVE_EVDEV:
+            return False
+        now = time.monotonic()
+        last_try = getattr(self, "_last_uinput_try", 0.0)
+        if not initial and last_try > 0.0 and (now - last_try) < 1.0:
+            return False
+        if not initial:
+            self._last_uinput_try = now
         try:
-            self._uinput = UInput(name="deckd-virtual-keyboard")
+            events = _keyboard_uinput_events()
+            if events:
+                self._uinput = UInput(events=events, name="deckd-virtual-keyboard")
+            else:
+                self._uinput = UInput(name="deckd-virtual-keyboard")
+            self._last_uinput_try = 0.0
             log.info("uinput virtual keyboard ready")
+            return True
         except Exception as error:  # PermissionError or missing /dev/uinput
-            log.warning("uinput unavailable (%s); 'keys' actions disabled", error)
+            if initial:
+                log.warning("uinput unavailable (%s); 'keys' actions disabled", error)
+            else:
+                log.debug("uinput still unavailable (%s)", error)
+            return False
+
+    def _reset_uinput_locked(self) -> None:
+        if self._uinput is not None:
+            try:
+                self._uinput.close()
+            except Exception:
+                pass
+            self._uinput = None
 
     @property
     def available(self) -> bool:
-        return self._uinput is not None
+        if self._uinput is not None:
+            return True
+        with self._lock:
+            return self._open_uinput_locked()
 
-    def send_chord(self, chord: str) -> None:
-        if self._uinput is None:
-            raise RuntimeError("uinput unavailable")
-        codes = [key_token_to_code(token) for token in chord.split("+") if token]
-        if not codes:
+    def send_chord(self, chord: str, hold_s: float = DEFAULT_KEY_HOLD_S) -> None:
+        steps = [
+            [key_token_to_code(token) for token in step.split("+") if token.strip()]
+            for step in chord.split(",")
+            if step.strip()
+        ]
+        if not steps or any(not codes for codes in steps):
             raise ValueError(f"empty key chord: {chord!r}")
-        for code in codes:
-            self._uinput.write(ecodes.EV_KEY, code, 1)
+        hold = max(0.01, min(float(hold_s), 5.0))
+        with self._lock:
+            if not self._open_uinput_locked():
+                raise RuntimeError("uinput unavailable")
+            assert self._uinput is not None
+            try:
+                for idx, codes in enumerate(steps):
+                    if idx > 0:
+                        time.sleep(0.04)
+                    for code in codes:
+                        self._uinput.write(ecodes.EV_KEY, code, 1)
+                    self._uinput.syn()
+                    time.sleep(hold)
+                    for code in reversed(codes):
+                        self._uinput.write(ecodes.EV_KEY, code, 0)
+                    self._uinput.syn()
+            except OSError:
+                self._reset_uinput_locked()
+                raise
+
+    def _tap_key(self, code: int, hold_s: float = 0.01) -> None:
+        assert self._uinput is not None
+        self._uinput.write(ecodes.EV_KEY, code, 1)
         self._uinput.syn()
-        time.sleep(0.01)
-        for code in reversed(codes):
-            self._uinput.write(ecodes.EV_KEY, code, 0)
+        time.sleep(hold_s)
+        self._uinput.write(ecodes.EV_KEY, code, 0)
         self._uinput.syn()
+
+    def unlock_sequence(self, password_bytes: bytearray, delay_ms: int = 1000) -> None:
+        """Wake screen, wait delay_ms, type password, and press Enter."""
+        try:
+            if not password_bytes:
+                raise ValueError("empty password")
+            text = password_bytes.decode("utf-8")
+            key_steps = [char_to_evdev(ch) for ch in text]
+            del text
+            wait_s = max(0, min(int(delay_ms), 10000)) / 1000.0
+            shift_code = ecodes.KEY_LEFTSHIFT
+            enter_code = ecodes.KEY_ENTER
+
+            with self._lock:
+                if not self._open_uinput_locked():
+                    raise RuntimeError("uinput unavailable")
+                try:
+                    self._tap_key(shift_code, hold_s=0.02)
+                    if wait_s > 0:
+                        time.sleep(wait_s)
+                    for code, shift in key_steps:
+                        if shift:
+                            self._uinput.write(ecodes.EV_KEY, shift_code, 1)
+                            self._uinput.syn()
+                        self._uinput.write(ecodes.EV_KEY, code, 1)
+                        self._uinput.syn()
+                        time.sleep(0.004)
+                        self._uinput.write(ecodes.EV_KEY, code, 0)
+                        self._uinput.syn()
+                        if shift:
+                            self._uinput.write(ecodes.EV_KEY, shift_code, 0)
+                            self._uinput.syn()
+                        time.sleep(0.004)
+                    time.sleep(0.02)
+                    self._tap_key(enter_code, hold_s=0.015)
+                except OSError:
+                    self._reset_uinput_locked()
+                    raise
+        finally:
+            for i in range(len(password_bytes)):
+                password_bytes[i] = 0
 
 
 MAX_LAUNCHER_APPS = 72
@@ -223,6 +500,7 @@ class Button:
     app: str | None = None
     icon: str | None = None
     color: str | None = None
+    hold_ms: int | None = None
 
 
 @dataclass
@@ -244,6 +522,8 @@ class Profile:
     buttons: list[Button] = field(default_factory=list)
     groups: list[Group] = field(default_factory=list)
     lock_target: bool = False
+    aliases: list[str] = field(default_factory=list)
+    match_title: list[str] = field(default_factory=list)
 
     @property
     def page_count(self) -> int:
@@ -272,6 +552,8 @@ class Profile:
 
 
 def _button_from_entry(entry: dict, default_color: str | None = None) -> Button:
+    raw_hold = entry.get("hold_ms")
+    hold_ms = int(raw_hold) if raw_hold is not None else None
     return Button(
         label=str(entry.get("label", "?"))[:13],
         keys=entry.get("keys"),
@@ -279,6 +561,7 @@ def _button_from_entry(entry: dict, default_color: str | None = None) -> Button:
         app=entry.get("app"),
         icon=entry.get("icon"),
         color=entry.get("color") or default_color,
+        hold_ms=hold_ms,
     )
 
 
@@ -365,6 +648,8 @@ def load_profiles_and_launcher(path: Path) -> tuple[dict[str, Profile], Launcher
             buttons=buttons,
             groups=groups,
             lock_target=bool(body.get("lock_target", False)),
+            aliases=[str(a) for a in body.get("aliases", []) if str(a).strip()],
+            match_title=[str(t) for t in body.get("match_title", []) if str(t).strip()],
         )
     if "default" not in profiles:
         profiles["default"] = Profile(app_id="default")
@@ -702,7 +987,8 @@ class DeckSession:
                  profile_store: ProfileStore | None = None,
                  control: DeckControl | None = None,
                  transport_name: str = "usb",
-                 launcher: LauncherConfig | None = None) -> None:
+                 launcher: LauncherConfig | None = None,
+                 unlock_store: "UnlockKeyStore | None" = None) -> None:
         self.port = port
         self.profiles = profiles
         self.injector = injector
@@ -713,6 +999,7 @@ class DeckSession:
         )
         self.control = control
         self.transport_name = transport_name
+        self.unlock_store = unlock_store
         self._applied_override = ""
         self._device_override = ""
         self.active_app = "default"
@@ -722,6 +1009,8 @@ class DeckSession:
         self.last_ping = 0.0
         self.last_rx = time.monotonic()
         self._rx_buffer = b""
+        self._unlock_results: queue.SimpleQueue[tuple[str, bool, str]] = queue.SimpleQueue()
+        self._unlock_busy = threading.Event()
 
     # -- transport -----------------------------------------------------------
 
@@ -773,10 +1062,14 @@ class DeckSession:
 
     def push_profiles(self) -> None:
         profile_ids = sorted(self.profiles)
-        if (any(len(app.encode()) > 63 or any(c in app for c in "\t\r\n")
+        if (any(len(app.encode()) > MAX_PROFILE_ID_BYTES or any(c in app for c in "\t\r\n")
                 for app in profile_ids)
-                or len(("Follow focus\n" + "\n".join(profile_ids)).encode()) >= 1024):
-            log.error("profile catalog exceeds device limits (63 bytes per ID, 1023 bytes total)")
+                or len(("Follow focus\n" + "\n".join(profile_ids)).encode()) >= MAX_PROFILE_CATALOG_BYTES):
+            log.error(
+                "profile catalog exceeds device limits (%d bytes per ID, %d bytes total)",
+                MAX_PROFILE_ID_BYTES,
+                MAX_PROFILE_CATALOG_BYTES - 1,
+            )
             self.send("DECK PROFILES ERROR")
             return
         self.send("DECK PROFILES BEGIN")
@@ -789,18 +1082,65 @@ class DeckSession:
         override = self.current_override()
         if force or override != self._applied_override:
             self._applied_override = override
-            self.active_app = self._resolve_profile(self.focus_app_id or "")
+            self.active_app = self._resolve_profile(self.focus_app_id or "", self.focus_title or "")
             self.page_index = 0
             self.push_selection()
             self.push_layout()
             self.publish_status()
 
-    def _resolve_profile(self, app_id: str) -> str:
-        """Effective profile: tray override first, then focused app, then default."""
+    def _match_focus_profile(self, app_id: str, title: str = "") -> str:
+        """Match focused (app_id, title) against profiles, aliases, and title rules.
+
+        Container/launcher windows (for example Snap Steam tagging Proton games as
+        ``steam_steam`` with title ``"Aethus"``) check ``match_title`` across non-container
+        profiles first so game/child profiles still activate automatically.
+        """
+        app_match: str | None = None
+        if app_id:
+            if app_id in self.profiles:
+                app_match = app_id
+            else:
+                app_low = app_id.lower()
+                for pid in self.profiles:
+                    if pid.lower() == app_low:
+                        app_match = pid
+                        break
+                if app_match is None:
+                    for pid, prof in self.profiles.items():
+                        if any(alias.lower() == app_low for alias in prof.aliases):
+                            app_match = pid
+                            break
+
+        is_container = (
+            app_match is not None and app_match.lower() in CONTAINER_APP_IDS
+        ) or (app_id.lower() in CONTAINER_APP_IDS if app_id else False)
+
+        if title and (app_match is None or is_container):
+            title_low = title.lower()
+            best_pid = ""
+            best_score = -1
+            for pid, prof in self.profiles.items():
+                if pid == "default" or pid.lower() in CONTAINER_APP_IDS:
+                    continue
+                for pat in prof.match_title:
+                    pat_low = pat.lower()
+                    matched = (fnmatch.fnmatchcase(title_low, pat_low)
+                               if ("*" in pat_low or "?" in pat_low)
+                               else (pat_low in title_low))
+                    if matched and len(pat_low) > best_score:
+                        best_score = len(pat_low)
+                        best_pid = pid
+            if best_pid:
+                return best_pid
+
+        return app_match if app_match is not None else "default"
+
+    def _resolve_profile(self, app_id: str, title: str = "") -> str:
+        """Effective profile: tray override first, then focused window match."""
         override = self.current_override()
         if override and override in self.profiles:
             return override
-        return app_id if app_id in self.profiles else "default"
+        return self._match_focus_profile(app_id, title)
 
     def publish_status(self) -> None:
         if self.control is not None:
@@ -813,8 +1153,8 @@ class DeckSession:
             )
 
     def set_focus(self, app_id: str, title: str) -> None:
-        """Switch profile for app_id (full FOCUS + LAYOUT push)."""
-        resolved = self._resolve_profile(app_id)
+        """Switch profile for (app_id, title) (full FOCUS + LAYOUT push)."""
+        resolved = self._resolve_profile(app_id, title)
         if resolved != self.active_app:
             self.active_app = resolved
             self.page_index = 0
@@ -825,8 +1165,9 @@ class DeckSession:
         self.publish_status()
 
     def update_focus(self, app_id: str, title: str) -> None:
-        """Apply a focus report; only re-push LAYOUT when the app changed."""
-        if app_id != self.focus_app_id:
+        """Apply a focus report; re-push LAYOUT when app or matched profile changed."""
+        resolved = self._resolve_profile(app_id, title)
+        if app_id != self.focus_app_id or resolved != self.active_app:
             self.set_focus(app_id, title)
         elif title != self.focus_title:
             self.focus_title = title
@@ -838,15 +1179,19 @@ class DeckSession:
     def _ensure_target_focus(self, profile: Profile) -> None:
         """For lock_target profiles, raise the profile's app before keys."""
         if (not profile.lock_target or profile.app_id == "default"
-                or self.focus_watcher is None
-                or self.focus_app_id == profile.app_id):
+                or self.focus_watcher is None):
             return
-        if self.focus_watcher.activate_app(profile.app_id):
-            log.info("raised %s before injecting keys", profile.app_id)
-            time.sleep(ACTIVATE_SETTLE)
-        else:
-            log.warning("could not raise %s; sending keys to focused window",
-                        profile.app_id)
+        if (self.focus_app_id == profile.app_id
+                or self._match_focus_profile(self.focus_app_id or "", self.focus_title or "") == profile.app_id):
+            return
+        candidates = [profile.app_id] + list(profile.aliases)
+        for target in candidates:
+            if self.focus_watcher.activate_app(target):
+                log.info("raised %s before injecting keys", target)
+                time.sleep(ACTIVATE_SETTLE)
+                return
+        log.warning("could not raise %s; sending keys to focused window",
+                    profile.app_id)
 
     def _execute_button(self, button: Button, profile: Profile | None = None) -> None:
         if not button.label and not button.keys and not button.shell and not button.app:
@@ -857,7 +1202,11 @@ class DeckSession:
         elif button.keys:
             if profile is not None:
                 self._ensure_target_focus(profile)
-            self.injector.send_chord(button.keys)
+            if button.hold_ms is not None:
+                hold_s = max(10, min(button.hold_ms, 5000)) / 1000.0
+                self.injector.send_chord(button.keys, hold_s=hold_s)
+            else:
+                self.injector.send_chord(button.keys)
             log.info("pressed %r -> keys %s", button.label, button.keys)
         elif button.shell:
             subprocess.Popen(
@@ -912,13 +1261,112 @@ class DeckSession:
         name = "".join(c if c.isprintable() and c not in "\t\r\n" else "_" for c in name)
         self.send("DECK HOST\t" + name[:63])
 
+    def _run_unlock_worker(self, seq: str, password_bytes: bytearray, delay_ms: int) -> None:
+        try:
+            self.injector.unlock_sequence(password_bytes, delay_ms=delay_ms)
+            self._unlock_results.put((seq, True, ""))
+        except Exception as error:
+            log.warning("unlock sequence failed: %s", error)
+            self._unlock_results.put((seq, False, str(error)))
+        finally:
+            self._unlock_busy.clear()
+
+    def _drain_unlock_results(self) -> None:
+        while True:
+            try:
+                seq, ok, err_msg = self._unlock_results.get_nowait()
+            except queue.Empty:
+                break
+            if ok:
+                self.send(f"DECK ACK {seq}")
+            else:
+                self.send(f"DECK ERR {seq} {err_msg}")
+
+    def _handle_unlock_command(self, parts: list[str]) -> None:
+        if len(parts) < 3:
+            self.send("DECK ERR UNLOCK invalid_command")
+            return
+        subcmd = parts[2]
+        if subcmd == "PAIR" and len(parts) >= 4:
+            allowed = self.transport_name == "usb" or (
+                self.control is not None and self.control.is_unlock_pairing_active()
+            )
+            if not allowed:
+                self.send(
+                    "DECK ERR UNLOCK pairing_locked Enable 'Allow unlock pairing' "
+                    "in Deck tray (or connect USB)"
+                )
+                return
+            if self.unlock_store is None:
+                self.send("DECK ERR UNLOCK unlock_unavailable")
+                return
+            try:
+                resp = self.unlock_store.pair_response(parts[3])
+                if self.control is not None and self.control.is_unlock_pairing_active():
+                    self.control.enable_unlock_pairing(0)
+                self.send(f"DECK UNLOCK PAIRED {resp}")
+                log.info("completed tablet unlock pairing over %s", self.transport_name)
+            except Exception as error:
+                log.warning("unlock pairing failed: %s", error)
+                self.send(f"DECK ERR UNLOCK pair_failed {error}")
+        elif subcmd == "CHALLENGE" and len(parts) >= 4:
+            seq = parts[3]
+            if self.unlock_store is None or not self.unlock_store.is_paired:
+                self.send(f"DECK ERR {seq} not_paired")
+                return
+            try:
+                challenge_b64 = self.unlock_store.issue_challenge(seq)
+                self.send(f"DECK UNLOCK NONCE {seq} {challenge_b64}")
+            except Exception as error:
+                log.warning("unlock challenge failed: %s", error)
+                self.send(f"DECK ERR {seq} {error}")
+        elif subcmd == "EXEC" and len(parts) >= 5:
+            seq, envelope_b64 = parts[3], parts[4]
+            if self.unlock_store is None or not self.unlock_store.is_paired:
+                self.send(f"DECK ERR {seq} not_paired")
+                return
+            if self._unlock_busy.is_set():
+                self.send(f"DECK ERR {seq} unlock_in_progress")
+                return
+            if not self.injector.available:
+                self.send(f"DECK ERR {seq} uinput_unavailable")
+                return
+            pw_buf: bytearray | None = None
+            try:
+                delay_ms, pw_buf = self.unlock_store.verify_and_decrypt(seq, envelope_b64)
+                self._unlock_busy.set()
+                worker = threading.Thread(
+                    target=self._run_unlock_worker,
+                    args=(seq, pw_buf, delay_ms),
+                    name="deck-unlock",
+                    daemon=True,
+                )
+                pw_buf = None  # ownership transferred to worker
+                worker.start()
+            except Exception as error:
+                if pw_buf is not None:
+                    for i in range(len(pw_buf)):
+                        pw_buf[i] = 0
+                self._unlock_busy.clear()
+                log.warning("unlock verification failed: %s", error)
+                self.send(f"DECK ERR {seq} {error}")
+        else:
+            self.send("DECK ERR UNLOCK invalid_command")
+
     def handle_line(self, line: str) -> None:
         self.last_rx = time.monotonic()
         if not line.startswith(("DECK", "OK DECK", "ERR")):
             return  # unrelated firmware output (boot logs, SDUP, ...)
-        log.debug("RX %s", line)
+        if line.startswith("DECK UNLOCK EXEC ") or line.startswith("DECK UNLOCK PAIR "):
+            prefix = " ".join(line.split()[:4])
+            log.debug("RX %s <redacted>", prefix)
+        else:
+            log.debug("RX %s", line)
         parts = line.split()
 
+        if line.startswith("DECK UNLOCK "):
+            self._handle_unlock_command(parts)
+            return
         if line == "DECK SELECT" or line.startswith("DECK SELECT\t"):
             profile_id = line.partition("\t")[2]
             if profile_id and profile_id not in self.profiles:
@@ -967,6 +1415,7 @@ class DeckSession:
             log.warning("device error: %s", line)
 
     def tick(self) -> None:
+        self._drain_unlock_results()
         self.sync_override()
         if self.profile_store is not None and self.profile_store.maybe_reload():
             if self.current_override() not in self.profiles and self.current_override():
@@ -1153,6 +1602,12 @@ def run(args: argparse.Namespace) -> int:
     profile_store = ProfileStore(Path(args.profiles))
     profiles = profile_store.profiles
     injector = KeyInjector()
+    unlock_key_arg = getattr(args, "unlock_key", None)
+    unlock_store = (
+        UnlockKeyStore(Path(unlock_key_arg) if unlock_key_arg else None)
+        if HAVE_UNLOCK_CRYPTO and UnlockKeyStore is not None
+        else None
+    )
     focus_watcher = FocusWatcher(
         bus_name=args.focus_bus_name,
         object_path=args.focus_object_path,
@@ -1217,7 +1672,8 @@ def run(args: argparse.Namespace) -> int:
                         port.reset_input_buffer()
                         session = DeckSession(port, profiles, injector,
                                               focus_watcher, profile_store,
-                                              control, "usb")
+                                              control, "usb",
+                                              unlock_store=unlock_store)
                         pump_session(session, ble_manager=ble_manager,
                                      wifi_manager=wifi_manager,
                                      idle_timeout=SERIAL_IDLE_TIMEOUT)
@@ -1232,7 +1688,8 @@ def run(args: argparse.Namespace) -> int:
                 try:
                     session = DeckSession(ble_conn, profiles, injector,
                                           focus_watcher, profile_store,
-                                          control, "ble")
+                                          control, "ble",
+                                          unlock_store=unlock_store)
                     pump_session(session, ble_manager=ble_manager,
                                  wifi_manager=wifi_manager,
                                  idle_timeout=BLE_IDLE_TIMEOUT)
@@ -1251,7 +1708,8 @@ def run(args: argparse.Namespace) -> int:
                 try:
                     session = DeckSession(transport, profiles, injector,
                                           focus_watcher, profile_store,
-                                          control, "wifi")
+                                          control, "wifi",
+                                          unlock_store=unlock_store)
                     pump_session(session, ble_manager=ble_manager,
                                  wifi_manager=wifi_manager,
                                  idle_timeout=TCP_IDLE_TIMEOUT)
@@ -1346,6 +1804,11 @@ def main() -> int:
         "--control-bus-name",
         default="org.mmesp32.Deckd",
         help="D-Bus name to claim for the tray/control interface",
+    )
+    parser.add_argument(
+        "--unlock-key",
+        default=None,
+        help="path to host unlock pairing keypair file (default: ~/.config/mmesp32-deckd/unlock.key)",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
