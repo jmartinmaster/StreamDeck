@@ -26,6 +26,10 @@
 #include "deck_ui_lvgl.h"
 #endif
 
+#ifdef BOARD_CROWPANEL_7
+#include "boards/crowpanel7/board_crowpanel7.h"
+#endif
+
 // Example GPIO button pins for hardware buttons (optional)
 #ifndef BUTTON_PIN_0
 #define BUTTON_PIN_0 -1
@@ -45,10 +49,14 @@ void setup() {
 
 #ifdef USE_LVGL_UI
     Serial.println("[main] Initializing LVGL...");
+#ifdef BOARD_CROWPANEL_7
+    board_crowpanel7_init(100);
+#else
     lv_init();
-    // Initialize your board's display and touch driver here (e.g. LovyanGFX /
-    // Arduino_GFX + lv_disp_drv_register + lv_indev_drv_register) before
-    // deck_ui_create() is called.
+    // Custom panel? Initialize your board's display and touch driver here
+    // (e.g. LovyanGFX / Arduino_GFX + lv_disp_drv_register + lv_indev_drv_register)
+    // before deck_ui_create() is called.
+#endif
     if (lv_disp_get_default() != nullptr) {
         deck_ui_create(lv_scr_act());
     } else {
@@ -76,6 +84,9 @@ void loop() {
 #ifdef USE_LVGL_UI
     // 2. Handle LVGL timer and sync UI (only when a display driver is registered)
     if (lv_disp_get_default() != nullptr) {
+#ifdef BOARD_CROWPANEL_7
+        board_crowpanel7_poll_swap();
+#endif
         lv_timer_handler();
         static uint32_t last_ui_update = 0;
         if (millis() - last_ui_update > 200) {

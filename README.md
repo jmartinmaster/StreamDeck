@@ -195,14 +195,21 @@ The `firmware/` directory contains a modular PlatformIO project with 4MB-safe de
 cd firmware
 ```
 
-#### Environment 1: ESP32-S3 Capacitive Touchscreen (`esp32s3_ble_touch`)
-LVGL 8.3 touchscreen UI + NimBLE/Serial/Wi-Fi protocol engine for ESP32-S3 panels (such as CrowPanel 5.0"/7.0" or Sunton panels):
+#### Environment 1: Elecrow CrowPanel 7.0" ESP32-S3 (`esp32s3_crowpanel_7` — Default, Out-of-the-Box)
+Complete turnkey firmware for the CrowPanel 7.0" ESP32-S3 (800×480 double-buffered RGB LCD, PCA9557 + GT911 capacitive touch, LVGL 8.3 UI, and NimBLE/USB/Wi-Fi protocol engine):
+```bash
+pio run -e esp32s3_crowpanel_7 -t upload
+```
+* **What happens:** The panel boots directly into the full 16-button LVGL touch interface, scans for `DeckD-<hostname>` over BLE (or switches to USB/Wi-Fi via the on-screen transport dropdown), and renders your active profile and App Launcher.
+
+#### Environment 2: Custom ESP32-S3 Touchscreen Panels (`esp32s3_ble_touch`)
+Generic LVGL 8.3 UI + protocol boilerplate for other ESP32-S3 panels (such as CrowPanel 5.0" or Sunton panels):
 ```bash
 pio run -e esp32s3_ble_touch -t upload
 ```
-* **Important:** Add your board's display and touch driver initialization (e.g., LovyanGFX / `Arduino_GFX` + GT911) in `firmware/src/main.cpp` right after `lv_init()`. Without a display driver registered, the firmware still boots safely and runs the BLE/protocol stack in headless mode.
+* **Important:** Add your board's display and touch driver initialization under `firmware/src/boards/<panel>/` or in `firmware/src/main.cpp` right after `lv_init()`. Without a display driver registered, the firmware still boots safely and runs the BLE/protocol stack in headless mode.
 
-#### Environment 2: Headless / Physical Pushbuttons over BLE (`esp32s3_ble_buttons`, `esp32_ble_buttons`)
+#### Environment 3: Headless / Physical Pushbuttons over BLE (`esp32s3_ble_buttons`, `esp32_ble_buttons`)
 Works out of the box on any ESP32-S3 or classic ESP32 devkit (uses GPIO 0 / onboard BOOT button by default, plus an interactive Serial CLI):
 ```bash
 # ESP32-S3:
@@ -217,7 +224,7 @@ pio run -e esp32_ble_buttons -t upload
   # Type: status, scan, press 0, launcher 0, next, prev
   ```
 
-#### Environment 3: Wired USB Serial (`esp32s3_serial`, `esp32_serial`)
+#### Environment 4: Wired USB Serial (`esp32s3_serial`, `esp32_serial`)
 Communicates directly with `deckd` over USB Serial at 115200 baud without Bluetooth:
 ```bash
 # ESP32-S3:

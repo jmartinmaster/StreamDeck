@@ -14,9 +14,24 @@ This firmware is designed to run on **any ESP32 or ESP32-S3 microcontroller** us
 
 ## PlatformIO Environments
 
-### 1. ESP32-S3 Touchscreen Panels (`esp32s3_ble_touch`)
+### 1. Elecrow CrowPanel 7.0" ESP32-S3 (`esp32s3_crowpanel_7` — Default, Ready to Flash)
+Includes a complete native ESP-IDF 5.x double-buffered 800×480 RGB LCD driver, PCA9557 I/O expander reset, GT911 capacitive touch task, PWM backlight control, and `lv_conf.h` (`firmware/src/boards/crowpanel7/`).
+
+**How to build and flash:**
+```bash
+cd firmware
+pio run -e esp32s3_crowpanel_7 -t upload
+```
+*What happens on boot:*
+- Initializes the 800×480 RGB display, GT911 touch (`0x5D` / `0x14`), and backlight at 100%.
+- Renders the 16-button LVGL Stream Deck UI (2 groups of 8 buttons), host/profile/transport dropdowns, page navigation, and paginated App Launcher.
+- Scans for `DeckD-<hostname>` over BLE automatically, or lets you switch to USB Serial / Wi-Fi TCP from the on-screen transport dropdown.
+
+---
+
+### 2. Custom ESP32-S3 Touchscreen Panels (`esp32s3_ble_touch`)
 Target hardware:
-- CrowPanel 5.0" / 7.0" ESP32-S3 (800x480 RGB display with GT911 capacitive touch)
+- CrowPanel 5.0" ESP32-S3
 - Sunton ESP32-S3 5.0" / 7.0" panels
 - CYD (Cheap Yellow Display) ESP32-S3 variants
 
@@ -26,21 +41,16 @@ cd firmware
 pio run -e esp32s3_ble_touch -t upload
 ```
 
-> **Important — Display & Touch Driver Integration:**
-> `esp32s3_ble_touch` provides the complete LVGL 8.3 UI (`src/deck_ui_lvgl.cpp`) and protocol/BLE engine (`src/deck_client.cpp`), but **does not bundle a board-specific display or touch driver** because pinouts and controllers vary across panels.
+> **Adding Your Panel Driver:**
+> `esp32s3_ble_touch` provides the LVGL 8.3 UI (`src/deck_ui_lvgl.cpp`), `include/lv_conf.h`, and protocol/BLE engine (`src/deck_client.cpp`) without a board-specific display driver.
 >
-> In `firmware/src/main.cpp`, initialize your panel's display and touch library (for example LovyanGFX or `Arduino_GFX` + GT911/FT6336) and register your `lv_disp_drv_t` / `lv_indev_drv_t` right after `lv_init()`.
+> Use `firmware/src/boards/crowpanel7/` as a reference to add your panel's display + touch initialization (e.g., `esp_lcd_panel_rgb`, LovyanGFX, or `Arduino_GFX` + GT911/FT6336) and register `lv_disp_drv_t` / `lv_indev_drv_t` after `lv_init()`.
 >
-> If you flash `esp32s3_ble_touch` before adding a display driver, the firmware will still boot cleanly, log a warning on Serial, and run the BLE/protocol stack in headless mode rather than crashing.
-
-*UI capabilities once your display driver is registered:*
-- Renders 16 interactive macro buttons (2 groups of 8 columns) using LVGL 8.3, plus a paginated App Launcher grid.
-- Connects automatically over Bluetooth LE to your Linux workstation running `deckd`.
-- Shows active application title, profile selection dropdown, host selection dropdown, and page navigation buttons.
+> If flashed before adding a display driver, `esp32s3_ble_touch` boots safely, logs a warning on Serial, and runs the BLE/protocol stack in headless mode rather than crashing.
 
 ---
 
-### 2. Headless / Physical Buttons over BLE (`esp32s3_ble_buttons`, `esp32_ble_buttons`)
+### 3. Headless / Physical Buttons over BLE (`esp32s3_ble_buttons`, `esp32_ble_buttons`)
 Ideal for testing on any bare ESP32-S3 or ESP32 devkit (such as an ESP32-S3 DevKitC-1) or building a physical macropad with tactile/mechanical switches:
 - Wiring: Connect pushbuttons between GPIO pins and GND (uses internal `INPUT_PULLUP`). Default `BUTTON_PIN_0=0` uses the onboard BOOT button on most devkits.
 - Because BLE carries the `DECK` protocol, **USB Serial (115200 baud) remains free for an interactive test CLI**.
@@ -75,7 +85,7 @@ deck_client_send_press(button_index);
 
 ---
 
-### 3. Wired USB Serial (`esp32s3_serial`, `esp32_serial`)
+### 4. Wired USB Serial (`esp32s3_serial`, `esp32_serial`)
 Works on any ESP32-S3 or classic ESP32 connected to your PC via USB cable without Bluetooth.
 - Does not require Bluetooth hardware or NimBLE.
 - The USB UART (`Serial` at 115200 baud) is dedicated to the `DECK` newline protocol talking directly to `deckd` (do not keep `pio device monitor` open while `deckd` is connected).
