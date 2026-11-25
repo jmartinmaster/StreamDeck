@@ -52,7 +52,7 @@ struct DeckClientState {
     uint16_t nextSeq;
     uint32_t lastRxMs;
     bool dirty;
-    char profileOptions[1024];
+    char profileOptions[4096];  // must match deckd MAX_PROFILE_CATALOG_BYTES
     char profileOverride[64];
     bool profilesReady;
     char hostName[64];

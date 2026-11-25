@@ -187,13 +187,21 @@ deckd-user enable
 
 ### Step 2: Device Firmware Setup (PlatformIO)
 
-> **Tip:** If `deckd` is already running, pause USB polling first (via the tray's USB checkbox or `deckd-user release-usb`) so PlatformIO can access `/dev/ttyUSB0`.
+> **Tip:** If `deckd` is already running, pause USB polling first (untick **USB** in the tray menu, or run `deckd-user release-usb` for .deb installs) so PlatformIO can access `/dev/ttyUSB0`.
 
-The `firmware/` directory contains a modular PlatformIO project with 4MB-safe defaults for ESP32-S3 and classic ESP32 boards (see [docs/HARDWARE_GUIDE.md](docs/HARDWARE_GUIDE.md) for flash/PSRAM and driver notes):
+The `firmware/` directory contains a modular PlatformIO project with 4MB-safe defaults for ESP32-S3 and classic ESP32 boards (see [docs/HARDWARE_GUIDE.md](docs/HARDWARE_GUIDE.md) for flash/PSRAM and driver notes).
+
+Install PlatformIO into a local virtualenv (works on distros that block system-wide `pip`, PEP 668) and use `.venv/bin/pio` in place of `pio` below:
 
 ```bash
-cd firmware
+cd ~/StreamDeck/firmware          # from host/: cd ../firmware
+python3 -m venv .venv
+.venv/bin/pip install platformio
+# Use .venv/bin/pio for every "pio ..." command below, e.g.:
+.venv/bin/pio run -e esp32s3_crowpanel_7 -t upload
 ```
+
+> **Note:** `esp32s3_crowpanel_7` builds on the pioarduino platform (Arduino-ESP32 3.x / ESP-IDF 5.5) with NimBLE-Arduino 2.x; the first build downloads that toolchain automatically.
 
 #### Environment 1: Elecrow CrowPanel 7.0" ESP32-S3 (`esp32s3_crowpanel_7` — Default, Out-of-the-Box)
 Complete turnkey firmware for the CrowPanel 7.0" ESP32-S3 (800×480 double-buffered RGB LCD, PCA9557 + GT911 capacitive touch, LVGL 8.3 UI, and NimBLE/USB/Wi-Fi protocol engine):
