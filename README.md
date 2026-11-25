@@ -1,3 +1,5 @@
+#There are issues with the install instructions, and I am actively working on fixing them 11/25/26 7:15am
+
 # Context-Aware Stream Deck System
 
 An open-source, wireless, context-aware macro pad and Stream Deck system designed for Linux workstations and embedded hardware (ESP32 / ESP32-S3).
