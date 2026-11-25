@@ -230,11 +230,13 @@ class BleTransport:
 
     async def _async_notify_all(self, data: bytes) -> None:
         # A profile catalog can follow a multi-packet focus line immediately.
+        # Notifications are unacknowledged, so pace every packet (including the
+        # gap between consecutive lines) or bursts of short catalog/launcher
+        # lines get dropped and the device never sees the closing END line.
         async with self._write_lock:
             for i in range(0, len(data), CHUNK_SIZE):
                 self.tx_char.notify(data[i : i + CHUNK_SIZE])
-                if i + CHUNK_SIZE < len(data):
-                    await asyncio.sleep(0.015)
+                await asyncio.sleep(0.015)
 
     def close(self) -> None:
         self.closed = True

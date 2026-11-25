@@ -53,24 +53,30 @@ static const char* const kFallbackColors[DECK_MAX_BUTTONS] = {
 };
 
 static DeckClientState s_deckState = {
-    .linkState = DECK_LINK_DISCONNECTED,
-    .focusApp = "Default",
-    .focusTitle = "Offline (Base Layout)",
-    .page = 1,
-    .pageCount = 1,
-    .groupTitles = {"Quick Launch", "Media & Controls"},
-    .buttons = {},
-    .nextSeq = 1,
-    .lastRxMs = 0,
-    .dirty = true
+    DECK_LINK_DISCONNECTED,
+    "Default",
+    "Offline (Base Layout)",
+    1,
+    1,
+    {"Quick Launch", "Media & Controls"},
+    {},
+    1,
+    0,
+    true,
+    "",
+    "",
+    false,
+    "",
+    "",
+    false
 };
 
 static DeckLauncherState s_launcherState = {
-    .items = {},
-    .count = 0,
-    .autoReturn = true,
-    .ready = false,
-    .dirty = true
+    {},
+    0,
+    true,
+    false,
+    true
 };
 static DeckLauncherState s_launcherStaging = {};
 static uint8_t s_launcherExpectedCount = 0;
@@ -402,6 +408,32 @@ static void on_notify_data(NimBLERemoteCharacteristic* pChar, uint8_t* pData, si
     }
 }
 
+static void handle_scan_complete() {
+    if (s_deckState.linkState == DECK_LINK_SCANNING)
+        s_deckState.linkState = DECK_LINK_DISCONNECTED;
+    if (s_choose_host) {
+        s_lastScanMs = UINT32_MAX;
+        portENTER_CRITICAL(&s_hosts_mux);
+        uint8_t count = s_host_count;
+        portEXIT_CRITICAL(&s_hosts_mux);
+        if (count) {
+            snprintf(s_deckState.feedback, sizeof(s_deckState.feedback),
+                     "Found %u computer(s); choose a Host to connect", count);
+        } else {
+            strcpy(s_deckState.feedback, "No computers found; check host BLE and other panel connections");
+        }
+        s_deckState.dirty = true;
+    }
+}
+
+#if defined(NIMBLE_CPP_VERSION_MAJOR) && NIMBLE_CPP_VERSION_MAJOR >= 2
+using DeckScanCallbackBase = NimBLEScanCallbacks;
+using DeckAdvertisedDeviceParam = const NimBLEAdvertisedDevice*;
+#else
+using DeckScanCallbackBase = NimBLEAdvertisedDeviceCallbacks;
+using DeckAdvertisedDeviceParam = NimBLEAdvertisedDevice*;
+#endif
+
 static bool remember_host(const char* address, const char* name) {
     char label[48];
     snprintf(label, sizeof(label), "%.26s [%s]", name[0] ? name : "DeckD", address + 9);
@@ -419,19 +451,27 @@ static bool remember_host(const char* address, const char* name) {
     return connect;
 }
 
-class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
-    void onResult(NimBLEAdvertisedDevice* advertisedDevice) override {
+class AdvertisedDeviceCallbacks : public DeckScanCallbackBase {
+    void onResult(DeckAdvertisedDeviceParam advertisedDevice) override {
         if (advertisedDevice->isAdvertisingService(kServiceUUID) ||
             advertisedDevice->getName().find("DeckD") == 0 ||
             advertisedDevice->getName() == "deckd") {
             const std::string address = advertisedDevice->getAddress().toString();
             if (!remember_host(address.c_str(), advertisedDevice->getName().c_str())) return;
-            NimBLEDevice::getScan()->stop();
             if (s_targetDevice) delete s_targetDevice;
             s_targetDevice = new NimBLEAdvertisedDevice(*advertisedDevice);
             s_deckState.linkState = DECK_LINK_CONNECTING;
+            NimBLEDevice::getScan()->stop();
         }
     }
+
+#if defined(NIMBLE_CPP_VERSION_MAJOR) && NIMBLE_CPP_VERSION_MAJOR >= 2
+    void onScanEnd(const NimBLEScanResults& scanResults, int reason) override {
+        (void)scanResults;
+        (void)reason;
+        handle_scan_complete();
+    }
+#endif
 };
 
 class ClientCallbacks : public NimBLEClientCallbacks {
@@ -439,7 +479,12 @@ class ClientCallbacks : public NimBLEClientCallbacks {
         (void)pClient;
     }
 
+#if defined(NIMBLE_CPP_VERSION_MAJOR) && NIMBLE_CPP_VERSION_MAJOR >= 2
+    void onDisconnect(NimBLEClient* pClient, int reason) override {
+        (void)reason;
+#else
     void onDisconnect(NimBLEClient* pClient) override {
+#endif
         (void)pClient;
         s_deckState.linkState = DECK_LINK_DISCONNECTED;
         s_pRxChar = nullptr;
@@ -675,7 +720,11 @@ void deck_client_start() {
         NimBLEDevice::init(DECK_DEVICE_ID);
         NimBLEDevice::setMTU(247);
         NimBLEScan* pScan = NimBLEDevice::getScan();
+#if defined(NIMBLE_CPP_VERSION_MAJOR) && NIMBLE_CPP_VERSION_MAJOR >= 2
+        pScan->setScanCallbacks(new AdvertisedDeviceCallbacks(), false);
+#else
         pScan->setAdvertisedDeviceCallbacks(new AdvertisedDeviceCallbacks());
+#endif
         pScan->setActiveScan(true);
         pScan->setInterval(100);
         pScan->setWindow(99);
@@ -860,22 +909,13 @@ void deck_client_loop() {
         if (now - s_lastScanMs > 3000) {
             s_lastScanMs = now;
             s_deckState.linkState = DECK_LINK_SCANNING;
+#if defined(NIMBLE_CPP_VERSION_MAJOR) && NIMBLE_CPP_VERSION_MAJOR >= 2
+            bool started = NimBLEDevice::getScan()->start(s_choose_host ? 5000 : 2000, false, true);
+#else
             bool started = NimBLEDevice::getScan()->start(s_choose_host ? 5 : 2, [](NimBLEScanResults) {
-                if (s_deckState.linkState == DECK_LINK_SCANNING)
-                    s_deckState.linkState = DECK_LINK_DISCONNECTED;
-                if (s_choose_host) {
-                    s_lastScanMs = UINT32_MAX;
-                    portENTER_CRITICAL(&s_hosts_mux);
-                    uint8_t count = s_host_count;
-                    portEXIT_CRITICAL(&s_hosts_mux);
-                    if (count) {
-                        snprintf(s_deckState.feedback, sizeof(s_deckState.feedback),
-                                 "Found %u computer(s); choose a Host to connect", count);
-                    } else {
-                        strcpy(s_deckState.feedback, "No computers found; check host BLE and other panel connections");
-                    }
-                }
+                handle_scan_complete();
             }, false);
+#endif
             if (!started) {
                 Serial.println("[deck] BLE scan start failed");
                 strcpy(s_deckState.feedback, "BLE scan failed; tap Scan to retry");
