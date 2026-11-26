@@ -58,7 +58,7 @@ install -m 755 "$HERE/postinst" "$STAGE/DEBIAN/postinst"
 cat > "$STAGE/DEBIAN/control" <<EOF
 Package: mmesp32-deckd
 Version: $VERSION
-Architecture: amd64
+Architecture: all
 Maintainer: MMEsp32 contributors <noreply@localhost>
 Section: utils
 Priority: optional
@@ -68,6 +68,7 @@ Installed-Size: $(du -sk "$STAGE/usr" | cut -f1)
 Description: MMEsp32 shortcut deck daemon and desktop tray
  Context-aware shortcut layouts over USB serial, BLE and TCP, with
  per-user services, editable profiles and a GNOME Shell focus extension.
- Built for Ubuntu 26.04 amd64.
+ Architecture-independent package for Ubuntu (Intel, AMD, ARM64).
 EOF
-dpkg-deb --root-owner-group --build "$STAGE" "$OUTPUT/mmesp32-deckd_${VERSION}_amd64.deb"
+rm -f -- "$OUTPUT"/mmesp32-deckd_*.deb
+dpkg-deb --root-owner-group --build "$STAGE" "$OUTPUT/mmesp32-deckd_${VERSION}_all.deb"

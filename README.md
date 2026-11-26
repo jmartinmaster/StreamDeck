@@ -128,12 +128,15 @@ Stream_Deck/
 
 ### Step 1: Host Installation (Linux Workstation)
 
-#### Option A: Debian Package (Ubuntu 26.04 amd64 — Recommended)
-Build and install the `.deb` package (see [host/packaging/README.md](host/packaging/README.md) for full details):
+#### Option A: Debian Package (Ubuntu — Intel, AMD, ARM64 — Recommended)
+Install the prebuilt architecture-independent `.deb` in `dist/` (or rebuild it with `build-deb.sh`; see [host/packaging/README.md](host/packaging/README.md) for full details):
+```bash
+sudo apt install ./dist/mmesp32-deckd_1.3.0_all.deb
+sudo usermod -aG input,dialout "$USER"
+```
+To rebuild the package from source:
 ```bash
 bash host/packaging/build-deb.sh 1.3.0 dist
-sudo apt install ./dist/mmesp32-deckd_1.3.0_amd64.deb
-sudo usermod -aG input,dialout "$USER"
 ```
 Log out and back in, then run (without `sudo`):
 ```bash

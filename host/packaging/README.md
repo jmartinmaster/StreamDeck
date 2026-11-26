@@ -1,11 +1,11 @@
-# MMEsp32 Deck for Ubuntu 26.04 amd64
+# MMEsp32 Deck for Ubuntu (Architecture-Independent `_all.deb`)
 
 ## Install
 
-Run on each Ubuntu desktop:
+Run on each Ubuntu desktop (works on Intel, AMD, and ARM64):
 
 ```bash
-sudo apt install ./mmesp32-deckd_1.3.0_amd64.deb
+sudo apt install ./mmesp32-deckd_1.3.0_all.deb
 sudo usermod -aG input,dialout "$USER"
 ```
 
@@ -133,7 +133,7 @@ them. Copy your old profile settings into the new per-user profiles file.
 
 ```bash
 deckd-user disable
-sudo apt install ./mmesp32-deckd_NEWVERSION_amd64.deb
+sudo apt install ./mmesp32-deckd_NEWVERSION_all.deb
 systemctl --user daemon-reload
 deckd-user enable
 ```

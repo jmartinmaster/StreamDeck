@@ -36,10 +36,10 @@ class PackageTests(unittest.TestCase):
             subprocess.run(
                 ["bash", str(PACKAGING / "build-deb.sh"), "1.0.0", str(root)],
                 check=True, capture_output=True, text=True)
-            package = root / "mmesp32-deckd_1.0.0_amd64.deb"
+            package = root / "mmesp32-deckd_1.0.0_all.deb"
             metadata = subprocess.check_output(
                 ["dpkg-deb", "--field", str(package)], text=True)
-            self.assertIn("Architecture: amd64", metadata)
+            self.assertIn("Architecture: all", metadata)
             self.assertIn("python3-dbus-next", metadata)
             self.assertIn("python3-evdev", metadata)
             self.assertIn("python3-cryptography", metadata)
