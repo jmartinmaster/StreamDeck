@@ -33,7 +33,7 @@ case "${1:-help}" in
             fi
         done
         if [ ! -w /dev/uinput ]; then
-            echo "Cannot write /dev/uinput. Follow the group setup in /usr/share/doc/mmesp32-deckd/README.md, then log out/in." >&2
+            echo "Cannot write /dev/uinput. Run 'sudo usermod -aG input,dialout \"\$USER\"', then reboot (see /usr/share/doc/mmesp32-deckd/README.md)." >&2
             exit 1
         fi
         install -d -m 700 "$DECK_CONFIG"

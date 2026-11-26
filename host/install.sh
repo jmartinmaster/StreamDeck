@@ -82,7 +82,7 @@ Next steps — run these yourself when ready:
   sudo udevadm control --reload-rules
   sudo modprobe uinput
   sudo udevadm trigger --name-match=uinput
-  sudo usermod -aG input,dialout "\$USER"    # then log out and back in
+  sudo usermod -aG input,dialout "\$USER"    # then reboot
 
   # 3. Install the GNOME focus extension (then log out/in to load it):
   mkdir -p "$(dirname "$EXT_DST")"
