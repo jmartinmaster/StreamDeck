@@ -133,7 +133,7 @@ bash host/packaging/build-deb.sh 1.3.0 dist
 sudo apt install ./dist/mmesp32-deckd_1.3.0_amd64.deb
 sudo usermod -aG input,dialout "$USER"
 ```
-Log out and back in, then run (without `sudo`):
+Reboot, then run (without `sudo`):
 ```bash
 deckd-user enable
 ```
@@ -156,7 +156,7 @@ deckd-user enable
    sudo udevadm trigger --name-match=uinput
    sudo usermod -aG input,dialout "$USER"
    ```
-   *(Log out and back in to apply the group change)*
+   *(Reboot to apply the group change — on Ubuntu, a quick logout/login can leave `systemd --user` with the old groups)*
 
 3. **Install and Enable the GNOME Shell Window Focus Extension:**
    ```bash
@@ -196,7 +196,7 @@ The `firmware/` directory contains a modular PlatformIO project with 4MB-safe de
 Install PlatformIO into a local virtualenv (works on distros that block system-wide `pip`, PEP 668) and use `.venv/bin/pio` in place of `pio` below:
 
 ```bash
-cd ~/StreamDeck/firmware          # from host/: cd ../firmware
+cd firmware                       # from host/: cd ../firmware
 python3 -m venv .venv
 .venv/bin/pip install platformio
 # Use .venv/bin/pio for every "pio ..." command below, e.g.:
@@ -211,6 +211,7 @@ Complete turnkey firmware for the CrowPanel 7.0" ESP32-S3 (800×480 double-buffe
 pio run -e esp32s3_crowpanel_7 -t upload
 ```
 * **What happens:** The panel boots directly into the full 16-button LVGL touch interface, scans for `DeckD-<hostname>` over BLE (or switches to USB/Wi-Fi via the on-screen transport dropdown), and renders your active profile and App Launcher.
+* **Transport tip:** Make sure the panel's on-screen transport dropdown matches an enabled transport in the tray menu — the firmware defaults to **BLE** while the tray defaults to **USB** enabled. **USB** connects immediately once enabled on both sides; **BLE** takes a few seconds to scan and sync; **Wi-Fi** requires Wi-Fi credentials to be configured in firmware (on-screen Wi-Fi setup is not yet implemented).
 
 #### Environment 2: Custom ESP32-S3 Touchscreen Panels (`esp32s3_ble_touch`)
 Generic LVGL 8.3 UI + protocol boilerplate for other ESP32-S3 panels (such as CrowPanel 5.0" or Sunton panels):
@@ -373,7 +374,7 @@ Run `./.venv/bin/python deckgui.py` to open the visual suite:
   ```bash
   groups
   ```
-* If not, follow Step 1.2 in the installation guide and log out/in.
+* If not, follow Step 1.2 in the installation guide and reboot.
 
 #### 2. The daemon fails to start with a BLE error
 * Ensure your PC has Bluetooth enabled: `bluetoothctl show`.

@@ -17,7 +17,7 @@ The default Terminal button runs Ubuntu's `x-terminal-emulator` alternative
 (for example Ptyxis), not a hard-coded GNOME Terminal executable. Files
 (Nautilus) is recommended for the default Files button.
 
-**Log out and back in** to apply group membership and load the focus extension.
+**Reboot** to apply group membership and load the focus extension.
 Then run these as your desktop user, **without sudo**:
 
 ```bash
