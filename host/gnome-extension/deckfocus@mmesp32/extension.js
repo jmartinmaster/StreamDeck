@@ -120,7 +120,8 @@ export default class DeckFocusExtension extends Extension {
             if (windowAppId.endsWith('.desktop'))
                 windowAppId = windowAppId.slice(0, -'.desktop'.length);
             const wmClass = window.get_wm_class() ?? '';
-            if (windowAppId === appId || wmClass === appId) {
+            if (windowAppId === appId || wmClass === appId
+                    || wmClass.toLowerCase() === appId.toLowerCase()) {
                 window.activate(global.get_current_time());
                 return true;
             }
@@ -157,8 +158,8 @@ export default class DeckFocusExtension extends Extension {
             appId = app?.get_id() ?? '';
             if (appId.endsWith('.desktop'))
                 appId = appId.slice(0, -'.desktop'.length);
-            if (!appId)
-                appId = window.get_wm_class() ?? '';
+            if (!appId || appId.startsWith('window:'))
+                appId = window.get_wm_class() || appId;
             title = window.get_title() ?? '';
         }
         if (appId === this._appId && title === this._title)

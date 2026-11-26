@@ -802,6 +802,74 @@ buttons = [
     { label = "Export", keys = "ctrl+e", icon = "save", color = "good" },
 ]
 
+[app.openscad_openscad]
+lock_target = true
+aliases = [
+    "openscad",
+    "OpenSCAD",
+    "openscad_openscad",
+    "org.openscad.OpenSCAD",
+]
+match_title = [
+    "OpenSCAD",
+]
+
+[[app.openscad_openscad.groups]]
+title = "Build & File"
+color = "good"
+buttons = [
+    { label = "Preview", keys = "f5", icon = "play", color = "good" },
+    { label = "Render", keys = "f6", icon = "refresh", color = "accent" },
+    { label = "ExpSTL", keys = "f7", icon = "download", color = "warn" },
+    { label = "Reload", keys = "f4", icon = "loop", color = "idle" },
+    { label = "Save", keys = "ctrl+s", icon = "save", color = "good" },
+    { label = "New", keys = "ctrl+n", icon = "plus", color = "idle" },
+    { label = "Open", keys = "ctrl+o", icon = "folder", color = "idle" },
+    { label = "ViewAll", keys = "ctrl+shift+v", icon = "gps", color = "good" },
+]
+
+[[app.openscad_openscad.groups]]
+title = "Standard Views"
+color = "accent"
+buttons = [
+    { label = "Diag", keys = "ctrl+0", icon = "app", color = "accent" },
+    { label = "Top", keys = "ctrl+4", icon = "up", color = "accent" },
+    { label = "Bottom", keys = "ctrl+5", icon = "down", color = "accent" },
+    { label = "Left", keys = "ctrl+6", icon = "left", color = "accent" },
+    { label = "Right", keys = "ctrl+7", icon = "right", color = "accent" },
+    { label = "Front", keys = "ctrl+8", icon = "eye", color = "accent" },
+    { label = "Back", keys = "ctrl+9", icon = "eye_close", color = "accent" },
+    { label = "Center", keys = "ctrl+shift+c", icon = "gps", color = "good" },
+]
+
+[[app.openscad_openscad.groups]]
+title = "Display & Mode"
+color = "idle"
+buttons = [
+    { label = "OpenCSG", keys = "f9", icon = "image", color = "accent" },
+    { label = "Surface", keys = "f10", icon = "app", color = "idle" },
+    { label = "Wire", keys = "f11", icon = "bars", color = "idle" },
+    { label = "Thrown", keys = "f12", icon = "warning", color = "warn" },
+    { label = "Edges", keys = "ctrl+1", icon = "edit", color = "idle" },
+    { label = "Axes", keys = "ctrl+2", icon = "plus", color = "idle" },
+    { label = "Cross", keys = "ctrl+3", icon = "gps", color = "idle" },
+    { label = "ResetV", keys = "ctrl+0", icon = "refresh", color = "idle" },
+]
+
+[[app.openscad_openscad.groups]]
+title = "Code Editor"
+color = "warn"
+buttons = [
+    { label = "Comment", keys = "ctrl+d", icon = "code", color = "warn" },
+    { label = "Uncomm", keys = "ctrl+shift+d", icon = "code", color = "accent" },
+    { label = "Indent", keys = "ctrl+i", icon = "right", color = "idle" },
+    { label = "Unind", keys = "ctrl+shift+i", icon = "left", color = "idle" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "accent" },
+    { label = "Replace", keys = "ctrl+alt+f", icon = "edit", color = "warn" },
+    { label = "Undo", keys = "ctrl+z", icon = "prev", color = "idle" },
+    { label = "Redo", keys = "ctrl+shift+z", icon = "next", color = "idle" },
+]
+
 [app.elegoo-satellite]
 lock_target = true
 aliases = [
@@ -2953,3 +3021,9 @@ color = "pink"
 icon = "settings"
 id = "org.gnome.DiskUtility.desktop"
 label = "Disks"
+
+[[launcher.apps]]
+color = "warn"
+icon = "code"
+id = "openscad_openscad.desktop"
+label = "OpenSCAD"

@@ -1424,8 +1424,8 @@ class DeckSession:
                 else:
                     self._device_override = ""
                 self._applied_override = ""
-            if self.active_app not in self.profiles:
-                self.active_app = self._resolve_profile(self.focus_app_id or "")
+            self.active_app = self._resolve_profile(
+                self.focus_app_id or "", self.focus_title or "")
             self.page_index = 0
             self.push_profiles()
             self.push_layout()
