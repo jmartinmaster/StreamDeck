@@ -33,7 +33,9 @@ static const uint32_t C_IDLE   = 0x313244; // Surface0 / Dark slate
 static lv_obj_t* deck_screen_root = nullptr;
 static lv_obj_t* deck_main_view = nullptr;
 static lv_obj_t* deck_launcher_view = nullptr;
+static lv_obj_t* deck_wifi_view = nullptr;
 static bool deck_launcher_open = false;
+static bool deck_wifi_open = false;
 static uint8_t deck_launcher_page = 0;
 
 static lv_obj_t* deck_title_lbl = nullptr;
@@ -41,6 +43,7 @@ static lv_obj_t* deck_status_dot = nullptr;
 static lv_obj_t* deck_status_lbl = nullptr;
 static lv_obj_t* deck_page_lbl = nullptr;
 static lv_obj_t* deck_transport_dropdown = nullptr;
+static lv_obj_t* deck_wifi_setup_btn = nullptr;
 static lv_obj_t* deck_profile_dropdown = nullptr;
 static lv_obj_t* deck_host_lbl = nullptr;
 static lv_obj_t* deck_host_dropdown = nullptr;
@@ -51,6 +54,16 @@ static lv_obj_t* deck_group_titles[2] = {nullptr, nullptr};
 static lv_obj_t* deck_btn_objs[DECK_MAX_BUTTONS] = {};
 static lv_obj_t* deck_btn_labels[DECK_MAX_BUTTONS] = {};
 static lv_obj_t* deck_btn_icons[DECK_MAX_BUTTONS] = {};
+
+static lv_obj_t* deck_wifi_dot = nullptr;
+static lv_obj_t* deck_wifi_status_lbl = nullptr;
+static lv_obj_t* deck_wifi_scan_btn = nullptr;
+static lv_obj_t* deck_wifi_scan_dropdown = nullptr;
+static lv_obj_t* deck_wifi_ssid_ta = nullptr;
+static lv_obj_t* deck_wifi_pass_ta = nullptr;
+static lv_obj_t* deck_wifi_show_pass_chk = nullptr;
+static lv_obj_t* deck_wifi_host_ta = nullptr;
+static lv_obj_t* deck_wifi_keyboard = nullptr;
 
 static lv_obj_t* deck_launcher_dot = nullptr;
 static lv_obj_t* deck_launcher_hint_lbl = nullptr;
@@ -122,9 +135,114 @@ static void set_hidden(lv_obj_t* obj, bool hidden) {
 
 static void show_deck_launcher_view(bool show) {
     deck_launcher_open = show;
-    set_hidden(deck_main_view, show);
-    set_hidden(deck_launcher_view, !show);
+    if (show) deck_wifi_open = false;
+    set_hidden(deck_main_view, deck_launcher_open || deck_wifi_open);
+    set_hidden(deck_launcher_view, !deck_launcher_open);
+    set_hidden(deck_wifi_view, !deck_wifi_open);
     deck_ui_update();
+}
+
+static void show_deck_wifi_view(bool show) {
+    deck_wifi_open = show;
+    if (show) {
+        deck_launcher_open = false;
+        const char* cur_ssid = deck_client_get_wifi_ssid();
+        const char* cur_pass = deck_client_get_wifi_pass();
+        const char* cur_host = deck_client_get_wifi_host();
+        if (deck_wifi_ssid_ta) lv_textarea_set_text(deck_wifi_ssid_ta, cur_ssid ? cur_ssid : "");
+        if (deck_wifi_pass_ta) {
+            lv_textarea_set_text(deck_wifi_pass_ta, cur_pass ? cur_pass : "");
+            lv_textarea_set_password_mode(deck_wifi_pass_ta, true);
+        }
+        if (deck_wifi_show_pass_chk) {
+            lv_obj_clear_state(deck_wifi_show_pass_chk, LV_STATE_CHECKED);
+        }
+        if (deck_wifi_host_ta) lv_textarea_set_text(deck_wifi_host_ta, cur_host ? cur_host : "");
+        if (deck_wifi_keyboard) {
+            lv_obj_t* target = (cur_ssid && cur_ssid[0]) ? deck_wifi_pass_ta : deck_wifi_ssid_ta;
+            lv_keyboard_set_textarea(deck_wifi_keyboard, target);
+        }
+        if (!deck_client_wifi_scan_in_progress()) {
+            deck_client_wifi_scan_start();
+        }
+    }
+    set_hidden(deck_main_view, deck_launcher_open || deck_wifi_open);
+    set_hidden(deck_launcher_view, !deck_launcher_open);
+    set_hidden(deck_wifi_view, !deck_wifi_open);
+    deck_ui_update();
+}
+
+static void deck_wifi_open_cb(lv_event_t* e) {
+    if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+    show_deck_wifi_view(true);
+}
+
+static void deck_wifi_back_cb(lv_event_t* e) {
+    if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+    show_deck_wifi_view(false);
+}
+
+static void deck_wifi_scan_btn_cb(lv_event_t* e) {
+    if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+    deck_client_wifi_scan_start();
+    deck_ui_update();
+}
+
+static void deck_wifi_scan_select_cb(lv_event_t* e) {
+    if (lv_event_get_code(e) != LV_EVENT_VALUE_CHANGED) return;
+    if (!deck_wifi_scan_dropdown || !deck_wifi_ssid_ta) return;
+    uint16_t sel = lv_dropdown_get_selected(deck_wifi_scan_dropdown);
+    char ssid[33] = {};
+    if (deck_client_wifi_get_scan_ssid(sel, ssid, sizeof(ssid))) {
+        lv_textarea_set_text(deck_wifi_ssid_ta, ssid);
+        if (deck_wifi_keyboard && deck_wifi_pass_ta) {
+            lv_keyboard_set_textarea(deck_wifi_keyboard, deck_wifi_pass_ta);
+        }
+    }
+}
+
+static void deck_wifi_ta_focus_cb(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code != LV_EVENT_FOCUSED && code != LV_EVENT_CLICKED) return;
+    lv_obj_t* ta = lv_event_get_target(e);
+    if (deck_wifi_keyboard && ta) {
+        lv_keyboard_set_textarea(deck_wifi_keyboard, ta);
+    }
+}
+
+static void deck_wifi_show_pass_cb(lv_event_t* e) {
+    if (lv_event_get_code(e) != LV_EVENT_VALUE_CHANGED) return;
+    if (!deck_wifi_pass_ta || !deck_wifi_show_pass_chk) return;
+    bool show = lv_obj_has_state(deck_wifi_show_pass_chk, LV_STATE_CHECKED);
+    lv_textarea_set_password_mode(deck_wifi_pass_ta, !show);
+}
+
+static void deck_wifi_clear_host_cb(lv_event_t* e) {
+    if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+    if (deck_wifi_host_ta) {
+        lv_textarea_set_text(deck_wifi_host_ta, "");
+    }
+}
+
+static void deck_wifi_save_cb(lv_event_t* e) {
+    if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+    const char* ssid = deck_wifi_ssid_ta ? lv_textarea_get_text(deck_wifi_ssid_ta) : "";
+    const char* pass = deck_wifi_pass_ta ? lv_textarea_get_text(deck_wifi_pass_ta) : "";
+    const char* host = deck_wifi_host_ta ? lv_textarea_get_text(deck_wifi_host_ta) : "";
+    deck_client_set_wifi_config(ssid, pass, host);
+    show_deck_wifi_view(false);
+}
+
+static void deck_wifi_kb_cb(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_READY && deck_wifi_keyboard) {
+        lv_obj_t* cur = lv_keyboard_get_textarea(deck_wifi_keyboard);
+        if (cur == deck_wifi_ssid_ta && deck_wifi_pass_ta) {
+            lv_keyboard_set_textarea(deck_wifi_keyboard, deck_wifi_pass_ta);
+        } else if (cur == deck_wifi_pass_ta && deck_wifi_host_ta) {
+            lv_keyboard_set_textarea(deck_wifi_keyboard, deck_wifi_host_ta);
+        }
+    }
 }
 
 static void deck_transport_cb(lv_event_t* e) {
@@ -232,12 +350,20 @@ void deck_ui_update() {
     const DeckClientState& state = deck_client_get_state();
     DeckTransport transport = deck_client_get_transport();
     bool is_ble = (transport == DECK_MODE_BLE);
+    bool is_wifi = (transport == DECK_MODE_WIFI);
 
     if (deck_transport_dropdown && !lv_dropdown_is_open(deck_transport_dropdown)) {
         uint16_t want = static_cast<uint16_t>(transport);
         if (lv_dropdown_get_selected(deck_transport_dropdown) != want) {
             lv_dropdown_set_selected(deck_transport_dropdown, want);
         }
+    }
+
+    set_hidden(deck_wifi_setup_btn, !is_wifi);
+    if (is_wifi && deck_wifi_setup_btn && lv_obj_is_valid(deck_wifi_setup_btn)) {
+        uint32_t wcol = (!deck_client_get_wifi_ssid()[0]) ? C_WARN
+                      : (deck_client_wifi_is_connected() ? C_GOOD : C_ACCENT);
+        lv_obj_set_style_border_color(deck_wifi_setup_btn, lv_color_hex(wcol), 0);
     }
 
     set_hidden(deck_host_lbl, !is_ble);
@@ -316,7 +442,13 @@ void deck_ui_update() {
         st_msg = "Connecting...";
     } else if (state.linkState == DECK_LINK_SCANNING) {
         dot_col = C_WARN;
-        st_msg = (transport == DECK_MODE_USB) ? "Waiting..." : "Scanning...";
+        if (transport == DECK_MODE_USB) {
+            st_msg = "Waiting...";
+        } else if (transport == DECK_MODE_WIFI) {
+            st_msg = deck_client_wifi_is_connected() ? "Finding host..." : "Wi-Fi...";
+        } else {
+            st_msg = "Scanning...";
+        }
     }
     if (deck_status_dot && lv_obj_is_valid(deck_status_dot)) {
         lv_obj_set_style_bg_color(deck_status_dot, lv_color_hex(dot_col), 0);
@@ -407,11 +539,49 @@ void deck_ui_update() {
             lv_obj_set_style_border_color(deck_launcher_btn_objs[slot], lv_color_hex(col), 0);
         }
     }
+
+    if (deck_wifi_open) {
+        bool scanning = deck_client_wifi_scan_in_progress();
+        bool wifi_up = deck_client_wifi_is_connected();
+        uint32_t w_dot_col = scanning ? C_WARN : (wifi_up ? C_GOOD : (deck_client_get_wifi_ssid()[0] ? C_WARN : C_MUTED));
+        if (deck_wifi_dot && lv_obj_is_valid(deck_wifi_dot)) {
+            lv_obj_set_style_bg_color(deck_wifi_dot, lv_color_hex(w_dot_col), 0);
+        }
+        if (deck_wifi_status_lbl && lv_obj_is_valid(deck_wifi_status_lbl)) {
+            char w_st[64];
+            if (scanning) {
+                strcpy(w_st, "Scanning...");
+            } else if (wifi_up) {
+                char ip[24] = {};
+                deck_client_get_wifi_ip(ip, sizeof(ip));
+                snprintf(w_st, sizeof(w_st), "IP: %s", ip);
+            } else if (deck_client_get_wifi_ssid()[0]) {
+                strcpy(w_st, "Connecting...");
+            } else {
+                strcpy(w_st, "Not configured");
+            }
+            lv_label_set_text(deck_wifi_status_lbl, w_st);
+        }
+        if (deck_wifi_scan_btn && lv_obj_is_valid(deck_wifi_scan_btn)) {
+            if (scanning) lv_obj_add_state(deck_wifi_scan_btn, LV_STATE_DISABLED);
+            else lv_obj_clear_state(deck_wifi_scan_btn, LV_STATE_DISABLED);
+        }
+        if (deck_wifi_scan_dropdown && lv_obj_is_valid(deck_wifi_scan_dropdown) &&
+            !lv_dropdown_is_open(deck_wifi_scan_dropdown)) {
+            char opts[768];
+            deck_client_wifi_get_scan_results(opts, sizeof(opts));
+            if (strcmp(lv_dropdown_get_options(deck_wifi_scan_dropdown), opts) != 0) {
+                lv_dropdown_set_options(deck_wifi_scan_dropdown, opts);
+                lv_dropdown_set_selected(deck_wifi_scan_dropdown, 0);
+            }
+        }
+    }
 }
 
 lv_obj_t* deck_ui_create(lv_obj_t* parent) {
     deck_client_start();
     deck_launcher_open = false;
+    deck_wifi_open = false;
     deck_launcher_page = 0;
 
     deck_screen_root = lv_obj_create(parent);
@@ -488,6 +658,16 @@ lv_obj_t* deck_ui_create(lv_obj_t* parent) {
     lv_obj_set_width(deck_transport_dropdown, 108);
     lv_dropdown_set_options(deck_transport_dropdown, "USB Only\nWi-Fi\nBluetooth");
     lv_obj_add_event_cb(deck_transport_dropdown, deck_transport_cb, LV_EVENT_VALUE_CHANGED, nullptr);
+
+    deck_wifi_setup_btn = lv_btn_create(ctrl_row);
+    lv_obj_set_size(deck_wifi_setup_btn, 114, 34);
+    lv_obj_set_style_bg_color(deck_wifi_setup_btn, lv_color_hex(0x232931), 0);
+    lv_obj_set_style_border_width(deck_wifi_setup_btn, 2, 0);
+    lv_obj_set_style_border_color(deck_wifi_setup_btn, lv_color_hex(C_ACCENT), 0);
+    lv_obj_t* wifi_setup_lbl = lv_label_create(deck_wifi_setup_btn);
+    lv_label_set_text(wifi_setup_lbl, LV_SYMBOL_WIFI " Wi-Fi Setup");
+    lv_obj_center(wifi_setup_lbl);
+    lv_obj_add_event_cb(deck_wifi_setup_btn, deck_wifi_open_cb, LV_EVENT_CLICKED, nullptr);
 
     deck_host_lbl = lv_label_create(ctrl_row);
     lv_label_set_text(deck_host_lbl, "Host:");
@@ -738,6 +918,150 @@ lv_obj_t* deck_ui_create(lv_obj_t* parent) {
             lv_obj_add_event_cb(btn, deck_launcher_btn_click_cb, LV_EVENT_CLICKED, (void*)(intptr_t)slot);
         }
     }
+
+    // Wi-Fi Setup View (hidden initially; includes AP scan, SSID/password/host inputs, and on-screen keyboard)
+    deck_wifi_view = lv_obj_create(deck_screen_root);
+    lv_obj_remove_style_all(deck_wifi_view);
+    lv_obj_set_size(deck_wifi_view, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_flex_flow(deck_wifi_view, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_row(deck_wifi_view, 6, 0);
+    lv_obj_add_flag(deck_wifi_view, LV_OBJ_FLAG_HIDDEN);
+
+    lv_obj_t* w_header = lv_obj_create(deck_wifi_view);
+    lv_obj_set_size(w_header, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_opa(w_header, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_opa(w_header, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_pad_all(w_header, 0, 0);
+    lv_obj_set_flex_flow(w_header, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(w_header, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(w_header, 8, 0);
+
+    lv_obj_t* w_back_btn = lv_btn_create(w_header);
+    lv_obj_set_size(w_back_btn, 84, 34);
+    lv_obj_set_style_bg_color(w_back_btn, lv_color_hex(C_IDLE), 0);
+    lv_obj_t* w_back_lbl = lv_label_create(w_back_btn);
+    lv_label_set_text(w_back_lbl, LV_SYMBOL_LEFT " Back");
+    lv_obj_center(w_back_lbl);
+    lv_obj_add_event_cb(w_back_btn, deck_wifi_back_cb, LV_EVENT_CLICKED, nullptr);
+
+    deck_wifi_dot = lv_obj_create(w_header);
+    lv_obj_set_size(deck_wifi_dot, 10, 10);
+    lv_obj_set_style_radius(deck_wifi_dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(deck_wifi_dot, lv_color_hex(C_MUTED), 0);
+    lv_obj_set_style_border_opa(deck_wifi_dot, LV_OPA_TRANSP, 0);
+
+    lv_obj_t* w_title = lv_label_create(w_header);
+    lv_label_set_text(w_title, "Wi-Fi Setup");
+    lv_obj_set_style_text_font(w_title, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(w_title, lv_color_hex(0xCDD6F4), 0);
+    lv_obj_set_flex_grow(w_title, 1);
+
+    deck_wifi_status_lbl = lv_label_create(w_header);
+    lv_label_set_text(deck_wifi_status_lbl, "Not configured");
+    lv_obj_set_style_text_color(deck_wifi_status_lbl, lv_color_hex(C_MUTED), 0);
+
+    deck_wifi_scan_btn = lv_btn_create(w_header);
+    lv_obj_set_size(deck_wifi_scan_btn, 74, 34);
+    lv_obj_set_style_bg_color(deck_wifi_scan_btn, lv_color_hex(C_IDLE), 0);
+    lv_obj_t* w_scan_lbl = lv_label_create(deck_wifi_scan_btn);
+    lv_label_set_text(w_scan_lbl, LV_SYMBOL_REFRESH " Scan");
+    lv_obj_center(w_scan_lbl);
+    lv_obj_add_event_cb(deck_wifi_scan_btn, deck_wifi_scan_btn_cb, LV_EVENT_CLICKED, nullptr);
+
+    lv_obj_t* w_save_btn = lv_btn_create(w_header);
+    lv_obj_set_size(w_save_btn, 136, 34);
+    lv_obj_set_style_bg_color(w_save_btn, lv_color_hex(0x232931), 0);
+    lv_obj_set_style_border_width(w_save_btn, 2, 0);
+    lv_obj_set_style_border_color(w_save_btn, lv_color_hex(C_GOOD), 0);
+    lv_obj_t* w_save_lbl = lv_label_create(w_save_btn);
+    lv_label_set_text(w_save_lbl, LV_SYMBOL_OK " Save & Connect");
+    lv_obj_set_style_text_color(w_save_lbl, lv_color_hex(C_GOOD), 0);
+    lv_obj_center(w_save_lbl);
+    lv_obj_add_event_cb(w_save_btn, deck_wifi_save_cb, LV_EVENT_CLICKED, nullptr);
+
+    lv_obj_t* w_card = lv_obj_create(deck_wifi_view);
+    lv_obj_set_size(w_card, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_color(w_card, lv_color_hex(0x1E1E2E), 0);
+    lv_obj_set_style_radius(w_card, 8, 0);
+    lv_obj_set_style_pad_all(w_card, 6, 0);
+    lv_obj_set_style_pad_row(w_card, 5, 0);
+    lv_obj_set_flex_flow(w_card, LV_FLEX_FLOW_COLUMN);
+
+    auto make_wifi_row = [w_card](const char* label_text) -> lv_obj_t* {
+        lv_obj_t* row = lv_obj_create(w_card);
+        lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
+        lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_opa(row, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_pad_all(row, 0, 0);
+        lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_pad_column(row, 8, 0);
+
+        lv_obj_t* lbl = lv_label_create(row);
+        lv_label_set_text(lbl, label_text);
+        lv_obj_set_width(lbl, 86);
+        lv_obj_set_style_text_color(lbl, lv_color_hex(0xCDD6F4), 0);
+        return row;
+    };
+
+    // Row 1: Nearby networks scan dropdown
+    lv_obj_t* w_row_scan = make_wifi_row("Nearby:");
+    deck_wifi_scan_dropdown = lv_dropdown_create(w_row_scan);
+    lv_obj_set_flex_grow(deck_wifi_scan_dropdown, 1);
+    lv_dropdown_set_options(deck_wifi_scan_dropdown, "Tap Scan to find networks");
+    lv_obj_add_event_cb(deck_wifi_scan_dropdown, deck_wifi_scan_select_cb, LV_EVENT_VALUE_CHANGED, nullptr);
+
+    // Row 2: SSID textarea
+    lv_obj_t* w_row_ssid = make_wifi_row("SSID:");
+    deck_wifi_ssid_ta = lv_textarea_create(w_row_ssid);
+    lv_textarea_set_one_line(deck_wifi_ssid_ta, true);
+    lv_textarea_set_max_length(deck_wifi_ssid_ta, 32);
+    lv_textarea_set_placeholder_text(deck_wifi_ssid_ta, "Wi-Fi network name (SSID)");
+    lv_obj_set_height(deck_wifi_ssid_ta, 34);
+    lv_obj_set_flex_grow(deck_wifi_ssid_ta, 1);
+    lv_obj_add_event_cb(deck_wifi_ssid_ta, deck_wifi_ta_focus_cb, LV_EVENT_ALL, nullptr);
+
+    // Row 3: Password textarea + Show checkbox
+    lv_obj_t* w_row_pass = make_wifi_row("Password:");
+    deck_wifi_pass_ta = lv_textarea_create(w_row_pass);
+    lv_textarea_set_one_line(deck_wifi_pass_ta, true);
+    lv_textarea_set_password_mode(deck_wifi_pass_ta, true);
+    lv_textarea_set_max_length(deck_wifi_pass_ta, 64);
+    lv_textarea_set_placeholder_text(deck_wifi_pass_ta, "Wi-Fi password (blank if open)");
+    lv_obj_set_height(deck_wifi_pass_ta, 34);
+    lv_obj_set_flex_grow(deck_wifi_pass_ta, 1);
+    lv_obj_add_event_cb(deck_wifi_pass_ta, deck_wifi_ta_focus_cb, LV_EVENT_ALL, nullptr);
+
+    deck_wifi_show_pass_chk = lv_checkbox_create(w_row_pass);
+    lv_checkbox_set_text(deck_wifi_show_pass_chk, "Show");
+    lv_obj_set_style_text_color(deck_wifi_show_pass_chk, lv_color_hex(C_MUTED), 0);
+    lv_obj_add_event_cb(deck_wifi_show_pass_chk, deck_wifi_show_pass_cb, LV_EVENT_VALUE_CHANGED, nullptr);
+
+    // Row 4: Optional Host override textarea + Auto button
+    lv_obj_t* w_row_host = make_wifi_row("Host (opt):");
+    deck_wifi_host_ta = lv_textarea_create(w_row_host);
+    lv_textarea_set_one_line(deck_wifi_host_ta, true);
+    lv_textarea_set_max_length(deck_wifi_host_ta, 63);
+    lv_textarea_set_placeholder_text(deck_wifi_host_ta, "Auto (mDNS) or IP[:port], e.g. 192.168.1.10");
+    lv_obj_set_height(deck_wifi_host_ta, 34);
+    lv_obj_set_flex_grow(deck_wifi_host_ta, 1);
+    lv_obj_add_event_cb(deck_wifi_host_ta, deck_wifi_ta_focus_cb, LV_EVENT_ALL, nullptr);
+
+    lv_obj_t* w_auto_btn = lv_btn_create(w_row_host);
+    lv_obj_set_size(w_auto_btn, 60, 34);
+    lv_obj_set_style_bg_color(w_auto_btn, lv_color_hex(C_IDLE), 0);
+    lv_obj_t* w_auto_lbl = lv_label_create(w_auto_btn);
+    lv_label_set_text(w_auto_lbl, "Auto");
+    lv_obj_center(w_auto_lbl);
+    lv_obj_add_event_cb(w_auto_btn, deck_wifi_clear_host_cb, LV_EVENT_CLICKED, nullptr);
+
+    // On-screen keyboard
+    deck_wifi_keyboard = lv_keyboard_create(deck_wifi_view);
+    lv_obj_set_width(deck_wifi_keyboard, LV_PCT(100));
+    lv_obj_set_flex_grow(deck_wifi_keyboard, 1);
+    lv_obj_set_style_min_height(deck_wifi_keyboard, 180, 0);
+    lv_keyboard_set_textarea(deck_wifi_keyboard, deck_wifi_ssid_ta);
+    lv_obj_add_event_cb(deck_wifi_keyboard, deck_wifi_kb_cb, LV_EVENT_ALL, nullptr);
 
     deck_ui_update();
     return deck_screen_root;

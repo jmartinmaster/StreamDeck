@@ -24,8 +24,8 @@ pio run -e esp32s3_crowpanel_7 -t upload
 ```
 *What happens on boot:*
 - Initializes the 800×480 RGB display, GT911 touch (`0x5D` / `0x14`), and backlight at 100%.
-- Renders the 16-button LVGL Stream Deck UI (2 groups of 8 buttons), host/profile/transport dropdowns, page navigation, and paginated App Launcher.
-- Scans for `DeckD-<hostname>` over BLE automatically, or lets you switch to USB Serial / Wi-Fi TCP from the on-screen transport dropdown.
+- Renders the 16-button LVGL Stream Deck UI (2 groups of 8 buttons), host/profile/transport dropdowns, page navigation, paginated App Launcher, and an on-screen **Wi-Fi Setup** view (nearby AP scanner, on-screen keyboard, optional host IP override, and NVS credential persistence).
+- Scans for `DeckD-<hostname>` over BLE automatically, or lets you switch to USB Serial or Wi-Fi TCP (`_mmdeckd._tcp` mDNS + port 4650) from the on-screen transport dropdown.
 
 ---
 

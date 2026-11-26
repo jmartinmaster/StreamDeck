@@ -100,6 +100,19 @@ static char s_pending_host[40] = {};
 static uint16_t s_pending_port = 0;
 static bool s_use_cached_host = true;
 
+static char s_wifi_ssid[33] = {};
+static char s_wifi_pass[65] = {};
+static bool s_wifi_was_connected = false;
+static uint32_t s_wifi_last_retry_ms = 0;
+static bool s_wifi_scan_active = false;
+static bool s_wifi_scan_done = false;
+static constexpr uint8_t kMaxWifiScanResults = 16;
+static struct {
+    char ssid[33];
+    int32_t rssi;
+} s_wifi_scan_results[kMaxWifiScanResults] = {};
+static uint8_t s_wifi_scan_count = 0;
+
 static String s_rxBuffer = "";
 static uint32_t s_lastScanMs = 0;
 static uint32_t s_lastPingMs = 0;
@@ -116,7 +129,10 @@ static uint16_t s_host_selected;
 
 static const char* transport_ready_feedback(DeckTransport t) {
     if (t == DECK_MODE_USB) return "USB Serial active; waiting for deckd";
-    if (t == DECK_MODE_WIFI) return "Wi-Fi mode active; searching for deckd";
+    if (t == DECK_MODE_WIFI) {
+        return s_wifi_ssid[0] ? "Wi-Fi mode active; connecting to Wi-Fi..."
+                              : "Wi-Fi not configured; tap Wi-Fi Setup";
+    }
     return "Bluetooth mode active; scanning for deckd";
 }
 
@@ -592,6 +608,91 @@ static void wifi_dial_task(void* arg) {
     vTaskDelete(nullptr);
 }
 
+static bool start_wifi_sta(bool force_reconnect) {
+    if (s_wifi_ssid[0] == '\0') return false;
+    WiFi.mode(WIFI_STA);
+    WiFi.setAutoReconnect(true);
+    WiFi.setSleep(false);
+
+    if (!force_reconnect && WiFi.status() == WL_CONNECTED && WiFi.SSID() == String(s_wifi_ssid)) {
+        s_wifi_was_connected = true;
+        snprintf(s_deckState.feedback, sizeof(s_deckState.feedback),
+                 "Wi-Fi %s (%s); searching for deckd...",
+                 s_wifi_ssid, WiFi.localIP().toString().c_str());
+        return true;
+    }
+
+    s_wifi_was_connected = false;
+    s_mdns_started = false;
+    WiFi.disconnect(false, false);
+    if (s_wifi_pass[0] != '\0') {
+        WiFi.begin(s_wifi_ssid, s_wifi_pass);
+    } else {
+        WiFi.begin(s_wifi_ssid);
+    }
+    s_wifi_last_retry_ms = millis();
+    snprintf(s_deckState.feedback, sizeof(s_deckState.feedback),
+             "Connecting to Wi-Fi \"%s\"...", s_wifi_ssid);
+    return true;
+}
+
+static void poll_wifi_scan() {
+    if (!s_wifi_scan_active) return;
+    int16_t n = WiFi.scanComplete();
+    if (n == WIFI_SCAN_RUNNING) return;
+
+    s_wifi_scan_active = false;
+    s_wifi_scan_done = true;
+    s_wifi_scan_count = 0;
+
+    if (n > 0) {
+        for (int16_t i = 0; i < n; i++) {
+            String ssid = WiFi.SSID(i);
+            if (ssid.isEmpty()) continue;
+            int32_t rssi = WiFi.RSSI(i);
+
+            // Deduplicate by SSID, keeping strongest RSSI
+            int8_t existing = -1;
+            for (uint8_t j = 0; j < s_wifi_scan_count; j++) {
+                if (strcmp(s_wifi_scan_results[j].ssid, ssid.c_str()) == 0) {
+                    existing = static_cast<int8_t>(j);
+                    break;
+                }
+            }
+            if (existing >= 0) {
+                if (rssi > s_wifi_scan_results[existing].rssi) {
+                    s_wifi_scan_results[existing].rssi = rssi;
+                }
+            } else if (s_wifi_scan_count < kMaxWifiScanResults) {
+                strncpy(s_wifi_scan_results[s_wifi_scan_count].ssid,
+                        ssid.c_str(),
+                        sizeof(s_wifi_scan_results[s_wifi_scan_count].ssid) - 1);
+                s_wifi_scan_results[s_wifi_scan_count].ssid[sizeof(s_wifi_scan_results[s_wifi_scan_count].ssid) - 1] = '\0';
+                s_wifi_scan_results[s_wifi_scan_count].rssi = rssi;
+                s_wifi_scan_count++;
+            }
+        }
+        // Sort descending by RSSI
+        for (uint8_t i = 1; i < s_wifi_scan_count; i++) {
+            auto key = s_wifi_scan_results[i];
+            int8_t j = static_cast<int8_t>(i) - 1;
+            while (j >= 0 && s_wifi_scan_results[j].rssi < key.rssi) {
+                s_wifi_scan_results[j + 1] = s_wifi_scan_results[j];
+                j--;
+            }
+            s_wifi_scan_results[j + 1] = key;
+        }
+    }
+
+    WiFi.scanDelete();
+
+    if (s_client_active && s_transport == DECK_MODE_WIFI &&
+        s_wifi_ssid[0] != '\0' && WiFi.status() != WL_CONNECTED) {
+        start_wifi_sta(false);
+    }
+    s_deckState.dirty = true;
+}
+
 void deck_client_init() {
     Preferences prefs;
     prefs.begin(DECK_NVS_NS, true);
@@ -602,6 +703,8 @@ void deck_client_init() {
     String cached_host = prefs.isKey("deck_host") ? prefs.getString("deck_host", "") : "";
     uint16_t cached_port = prefs.isKey("deck_port") ? prefs.getUShort("deck_port", 0) : 0;
     String pinned_host = prefs.isKey("deck_pin") ? prefs.getString("deck_pin", "") : "";
+    String wifi_ssid = prefs.isKey("wifi_ssid") ? prefs.getString("wifi_ssid", "") : "";
+    String wifi_pass = prefs.isKey("wifi_pass") ? prefs.getString("wifi_pass", "") : "";
     prefs.end();
 
     if (saved == DECK_MODE_WIFI) s_transport = DECK_MODE_WIFI;
@@ -616,6 +719,14 @@ void deck_client_init() {
     if (!pinned_host.isEmpty()) {
         strncpy(s_pinned_host, pinned_host.c_str(), sizeof(s_pinned_host) - 1);
         s_pinned_host[sizeof(s_pinned_host) - 1] = '\0';
+    }
+    if (!wifi_ssid.isEmpty()) {
+        strncpy(s_wifi_ssid, wifi_ssid.c_str(), sizeof(s_wifi_ssid) - 1);
+        s_wifi_ssid[sizeof(s_wifi_ssid) - 1] = '\0';
+    }
+    if (!wifi_pass.isEmpty()) {
+        strncpy(s_wifi_pass, wifi_pass.c_str(), sizeof(s_wifi_pass) - 1);
+        s_wifi_pass[sizeof(s_wifi_pass) - 1] = '\0';
     }
 
     apply_fallback_labels();
@@ -669,7 +780,16 @@ bool deck_client_set_transport(DeckTransport transport) {
     if (transport == s_transport) return true;
 
     bool was_active = s_client_active;
+    bool was_wifi = (s_transport == DECK_MODE_WIFI);
     if (was_active) deck_client_stop();
+    if (was_wifi && transport != DECK_MODE_WIFI) {
+        WiFi.scanDelete();
+        s_wifi_scan_active = false;
+        WiFi.disconnect(true, false);
+        WiFi.mode(WIFI_OFF);
+        s_wifi_was_connected = false;
+        s_mdns_started = false;
+    }
     s_transport = transport;
     if (was_active) deck_client_start();
 
@@ -709,10 +829,16 @@ void deck_client_start() {
         s_next_dial_ms = 0;
         s_use_cached_host = (s_cached_host[0] != '\0' && s_cached_port != 0);
         portEXIT_CRITICAL(&s_wifi_mux);
-        s_deckState.linkState = DECK_LINK_SCANNING;
         s_deckState.lastRxMs = millis();
         s_lastPingMs = millis();
-        strcpy(s_deckState.feedback, "Searching for deckd over Wi-Fi (_mmdeckd._tcp)...");
+        if (s_wifi_ssid[0] == '\0') {
+            s_deckState.linkState = DECK_LINK_DISCONNECTED;
+            strcpy(s_deckState.feedback, "Wi-Fi not configured; tap Wi-Fi Setup");
+        } else {
+            s_deckState.linkState = DECK_LINK_SCANNING;
+            start_wifi_sta(false);
+        }
+        s_deckState.dirty = true;
         return;
     }
 #if DECK_TRANSPORT_BLE
@@ -773,6 +899,7 @@ static bool rx_timed_out(uint32_t timeout_ms) {
 }
 
 void deck_client_loop() {
+    poll_wifi_scan();
     if (!s_client_active) return;
 
     uint32_t now = millis();
@@ -863,9 +990,52 @@ void deck_client_loop() {
             return;
         }
 
-        if (WiFi.status() != WL_CONNECTED) {
+        if (s_wifi_ssid[0] == '\0') {
+            s_deckState.linkState = DECK_LINK_DISCONNECTED;
+            return;
+        }
+
+        wl_status_t wst = WiFi.status();
+        if (wst != WL_CONNECTED) {
+            if (s_wifi_was_connected) {
+                s_wifi_was_connected = false;
+                s_mdns_started = false;
+                if (s_tcpClient) {
+                    close_wifi_client();
+                    apply_fallback_labels();
+                }
+                s_wifi_last_retry_ms = now;
+                snprintf(s_deckState.feedback, sizeof(s_deckState.feedback),
+                         "Wi-Fi lost; reconnecting to \"%s\"...", s_wifi_ssid);
+                s_deckState.dirty = true;
+            }
+            if (!s_wifi_scan_active) {
+                if (wst == WL_NO_SSID_AVAIL) {
+                    snprintf(s_deckState.feedback, sizeof(s_deckState.feedback),
+                             "Wi-Fi \"%s\" not found; retrying...", s_wifi_ssid);
+                } else if (wst == WL_CONNECT_FAILED) {
+                    snprintf(s_deckState.feedback, sizeof(s_deckState.feedback),
+                             "Wi-Fi auth failed for \"%s\"; check password", s_wifi_ssid);
+                }
+                if (now - s_wifi_last_retry_ms > 15000) {
+                    start_wifi_sta(true);
+                }
+            }
             s_deckState.linkState = DECK_LINK_SCANNING;
             return;
+        }
+
+        if (!s_wifi_was_connected) {
+            s_wifi_was_connected = true;
+            s_mdns_started = false;
+            portENTER_CRITICAL(&s_wifi_mux);
+            s_dial_backoff_ms = 1000;
+            s_next_dial_ms = 0;
+            portEXIT_CRITICAL(&s_wifi_mux);
+            snprintf(s_deckState.feedback, sizeof(s_deckState.feedback),
+                     "Wi-Fi %s (%s); searching for deckd...",
+                     s_wifi_ssid, WiFi.localIP().toString().c_str());
+            s_deckState.dirty = true;
         }
 
         bool spawn_dial = false;
@@ -1110,5 +1280,149 @@ bool deck_client_select_profile(const char* profile) {
         Serial.println("[deck] profile selection send failed");
         return false;
     }
+    return true;
+}
+
+const char* deck_client_get_wifi_ssid() {
+    return s_wifi_ssid;
+}
+
+const char* deck_client_get_wifi_pass() {
+    return s_wifi_pass;
+}
+
+bool deck_client_wifi_is_connected() {
+    return WiFi.status() == WL_CONNECTED;
+}
+
+void deck_client_get_wifi_ip(char* buf, size_t capacity) {
+    if (!buf || capacity == 0) return;
+    if (WiFi.status() == WL_CONNECTED) {
+        String ip = WiFi.localIP().toString();
+        strncpy(buf, ip.c_str(), capacity - 1);
+        buf[capacity - 1] = '\0';
+    } else {
+        buf[0] = '\0';
+    }
+}
+
+void deck_client_set_wifi_config(const char* ssid, const char* pass, const char* host) {
+    String clean_ssid = ssid ? String(ssid) : "";
+    clean_ssid.trim();
+    String raw_pass = pass ? String(pass) : "";
+    String clean_host = host ? String(host) : "";
+    clean_host.trim();
+
+    Preferences prefs;
+    prefs.begin(DECK_NVS_NS, false);
+    if (clean_ssid.isEmpty()) prefs.remove("wifi_ssid");
+    else prefs.putString("wifi_ssid", clean_ssid);
+    if (raw_pass.isEmpty()) prefs.remove("wifi_pass");
+    else prefs.putString("wifi_pass", raw_pass);
+    if (clean_host.isEmpty()) prefs.remove("deck_pin");
+    else prefs.putString("deck_pin", clean_host);
+    prefs.end();
+
+    if (clean_ssid.isEmpty()) {
+        s_wifi_ssid[0] = '\0';
+    } else {
+        strncpy(s_wifi_ssid, clean_ssid.c_str(), sizeof(s_wifi_ssid) - 1);
+        s_wifi_ssid[sizeof(s_wifi_ssid) - 1] = '\0';
+    }
+
+    if (raw_pass.isEmpty()) {
+        s_wifi_pass[0] = '\0';
+    } else {
+        strncpy(s_wifi_pass, raw_pass.c_str(), sizeof(s_wifi_pass) - 1);
+        s_wifi_pass[sizeof(s_wifi_pass) - 1] = '\0';
+    }
+
+    portENTER_CRITICAL(&s_wifi_mux);
+    if (clean_host.isEmpty()) {
+        s_pinned_host[0] = '\0';
+    } else {
+        strncpy(s_pinned_host, clean_host.c_str(), sizeof(s_pinned_host) - 1);
+        s_pinned_host[sizeof(s_pinned_host) - 1] = '\0';
+    }
+    portEXIT_CRITICAL(&s_wifi_mux);
+
+    if (s_transport != DECK_MODE_WIFI) {
+        deck_client_set_transport(DECK_MODE_WIFI);
+    } else if (s_client_active) {
+        deck_client_stop();
+        WiFi.disconnect(false, false);
+        s_wifi_was_connected = false;
+        s_mdns_started = false;
+        deck_client_start();
+    }
+    s_deckState.dirty = true;
+}
+
+void deck_client_wifi_scan_start() {
+    if (s_wifi_scan_active) return;
+    if (WiFi.getMode() == WIFI_OFF) {
+        WiFi.mode(WIFI_STA);
+    }
+    if (WiFi.status() != WL_CONNECTED) {
+        WiFi.disconnect(false, false);
+    }
+    WiFi.scanDelete();
+    s_wifi_scan_done = false;
+    int16_t res = WiFi.scanNetworks(true, false);
+    if (res == WIFI_SCAN_RUNNING) {
+        s_wifi_scan_active = true;
+    } else {
+        s_wifi_scan_active = false;
+        s_wifi_scan_done = true;
+        s_wifi_scan_count = 0;
+    }
+    s_deckState.dirty = true;
+}
+
+bool deck_client_wifi_scan_in_progress() {
+    return s_wifi_scan_active;
+}
+
+uint8_t deck_client_wifi_get_scan_results(char* options, size_t capacity) {
+    if (!options || capacity == 0) return 0;
+    if (s_wifi_scan_active) {
+        strncpy(options, "Scanning nearby Wi-Fi...", capacity - 1);
+        options[capacity - 1] = '\0';
+        return 0;
+    }
+    if (s_wifi_scan_count == 0) {
+        strncpy(options,
+                s_wifi_scan_done ? "No networks found (tap Scan)" : "Tap Scan to find networks",
+                capacity - 1);
+        options[capacity - 1] = '\0';
+        return 0;
+    }
+    const char* header = "Select a network...";
+    size_t used = strlen(header);
+    if (used >= capacity) {
+        options[0] = '\0';
+        return 0;
+    }
+    memcpy(options, header, used + 1);
+    for (uint8_t i = 0; i < s_wifi_scan_count; i++) {
+        char entry[56];
+        snprintf(entry, sizeof(entry), "%s (%ld dBm)",
+                 s_wifi_scan_results[i].ssid,
+                 static_cast<long>(s_wifi_scan_results[i].rssi));
+        size_t elen = strlen(entry);
+        size_t need = 1 + elen;
+        if (used + need >= capacity) break;
+        options[used++] = '\n';
+        memcpy(options + used, entry, elen);
+        used += elen;
+        options[used] = '\0';
+    }
+    return s_wifi_scan_count;
+}
+
+bool deck_client_wifi_get_scan_ssid(uint16_t index, char* ssid, size_t capacity) {
+    if (!ssid || capacity == 0 || index == 0 || (index - 1) >= s_wifi_scan_count) return false;
+    strncpy(ssid, s_wifi_scan_results[index - 1].ssid, capacity - 1);
+    ssid[capacity - 1] = '\0';
     return true;
 }

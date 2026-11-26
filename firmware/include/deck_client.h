@@ -81,6 +81,15 @@ bool deck_client_set_transport(DeckTransport transport);
 bool deck_client_ble_initialized();
 const char* deck_client_get_wifi_host();
 void deck_client_set_wifi_host(const char* host);
+const char* deck_client_get_wifi_ssid();
+const char* deck_client_get_wifi_pass();
+void deck_client_set_wifi_config(const char* ssid, const char* pass, const char* host);
+bool deck_client_wifi_is_connected();
+void deck_client_get_wifi_ip(char* buf, size_t capacity);
+void deck_client_wifi_scan_start();
+bool deck_client_wifi_scan_in_progress();
+uint8_t deck_client_wifi_get_scan_results(char* options, size_t capacity);
+bool deck_client_wifi_get_scan_ssid(uint16_t index, char* ssid, size_t capacity);
 
 // State querying
 const DeckClientState& deck_client_get_state();

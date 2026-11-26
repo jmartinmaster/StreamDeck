@@ -6,7 +6,7 @@ An open-source, wireless, context-aware macro pad and Stream Deck system designe
 
 Unlike conventional macro pads that only simulate key combinations blindly, this system maintains a **continuous two-way synchronization link** between your PC and the device. It automatically detects which application currently has window focus (e.g., VS Code, Firefox, Terminal, CAD), dynamically pushes the relevant button labels, icons, and colors to the device screen, and confirms every button action.
 
-No external cloud services, bridges, or Raspberry Pi servers are required. The device communicates directly with your Linux PC over **Bluetooth Low Energy (BLE)** or **USB Serial**.
+No external cloud services, bridges, or Raspberry Pi servers are required. The device communicates directly with your Linux PC over **Wi-Fi (TCP / mDNS)**, **Bluetooth Low Energy (BLE)**, or **USB Serial**.
 
 ---
 
@@ -14,7 +14,8 @@ No external cloud services, bridges, or Raspberry Pi servers are required. The d
 
 * **Context-Aware Dynamic Switching:** As you switch windows on your computer, the deck immediately adapts its button grid to match the active application (via a native GNOME Shell D-Bus focus reporter).
 * **Direct Peer-to-Peer Link:** Connects directly to the workstation running the daemon. No intermediate servers or Raspberry Pi gateways needed.
-* **Dual Transport:**
+* **Triple Transport:**
+  * **Wi-Fi (TCP / mDNS):** Connects over your local Wi-Fi network to `deckd` on TCP port 4650 with automatic `_mmdeckd._tcp` mDNS discovery, optional manual host IP override, and an on-screen **Wi-Fi Setup** screen (nearby network scanner, on-screen keyboard, and NVS credential persistence).
   * **Wireless Bluetooth LE (BLE):** Implements the standard Nordic UART Service (NUS) via BlueZ GATT.
   * **USB CDC Serial:** Plug-and-play over a standard USB-C cable at 115200 baud.
 * **Two-Way Synchronization:**
@@ -60,7 +61,7 @@ flowchart TD
         Client <--> UI
     end
 
-    D <==>|"Bluetooth LE (Nordic UART Service)\nOR USB CDC Serial (115200)"| Client
+    D <==>|"Wi-Fi TCP/mDNS (4650), Bluetooth LE (NUS),\nOR USB CDC Serial (115200)"| Client
 ```
 
 ---
@@ -95,12 +96,13 @@ Stream_Deck/
     ├── platformio.ini             # Multi-target build configuration
     ├── include/
     │   ├── deck_config.h          # Hardware configuration & transport flags
-    │   ├── deck_client.h          # Protocol client header
-    │   └── deck_ui_lvgl.h         # LVGL touchscreen UI header
+    │   ├── deck_client.h          # Protocol client & Wi-Fi config header
+    │   ├── deck_ui_lvgl.h         # LVGL touchscreen UI header
+    │   └── lv_conf.h              # LVGL 8.3 widget/memory configuration
     ├── src/
     │   ├── main.cpp               # Setup, loop, and hardware integration
-    │   ├── deck_client.cpp        # Full protocol parser, BLE client, sequence tracking
-    │   └── deck_ui_lvgl.cpp       # 16-button LVGL touch interface
+    │   ├── deck_client.cpp        # Protocol parser, USB/Wi-Fi/BLE transports, NVS & AP scan
+    │   └── deck_ui_lvgl.cpp       # 16-button LVGL UI, App Launcher, and Wi-Fi Setup screen
     └── test/
         └── test_deck_parser.py    # Host-side unit test for protocol parser
 ```
@@ -112,7 +114,7 @@ Stream_Deck/
 ### Host (PC)
 * **OS:** Linux (Ubuntu 22.04+, Debian 12+, Fedora, Arch).
 * **Desktop Environment:** GNOME (Wayland or X11) recommended for automated focus tracking. Other desktop environments work with manual profile selection via the tray or GUI.
-* **Bluetooth:** Bluetooth 4.0+ adapter (BlueZ) for BLE wireless mode, or an available USB port for wired serial mode.
+* **Connectivity:** Local Wi-Fi/LAN (TCP port 4650 + mDNS), Bluetooth 4.0+ adapter (BlueZ) for BLE wireless mode, or an available USB port for wired serial mode.
 * **Python:** Python 3.10+ with `venv`.
 
 ### Target Device (Microcontroller)
@@ -133,7 +135,7 @@ bash host/packaging/build-deb.sh 1.3.0 dist
 sudo apt install ./dist/mmesp32-deckd_1.3.0_amd64.deb
 sudo usermod -aG input,dialout "$USER"
 ```
-Reboot, then run (without `sudo`):
+Log out and back in, then run (without `sudo`):
 ```bash
 deckd-user enable
 ```
@@ -156,7 +158,7 @@ deckd-user enable
    sudo udevadm trigger --name-match=uinput
    sudo usermod -aG input,dialout "$USER"
    ```
-   *(Reboot to apply the group change — on Ubuntu, a quick logout/login can leave `systemd --user` with the old groups)*
+   *(Log out and back in to apply the group change)*
 
 3. **Install and Enable the GNOME Shell Window Focus Extension:**
    ```bash
@@ -196,7 +198,7 @@ The `firmware/` directory contains a modular PlatformIO project with 4MB-safe de
 Install PlatformIO into a local virtualenv (works on distros that block system-wide `pip`, PEP 668) and use `.venv/bin/pio` in place of `pio` below:
 
 ```bash
-cd firmware                       # from host/: cd ../firmware
+cd ~/StreamDeck/firmware          # from host/: cd ../firmware
 python3 -m venv .venv
 .venv/bin/pip install platformio
 # Use .venv/bin/pio for every "pio ..." command below, e.g.:
@@ -211,7 +213,6 @@ Complete turnkey firmware for the CrowPanel 7.0" ESP32-S3 (800×480 double-buffe
 pio run -e esp32s3_crowpanel_7 -t upload
 ```
 * **What happens:** The panel boots directly into the full 16-button LVGL touch interface, scans for `DeckD-<hostname>` over BLE (or switches to USB/Wi-Fi via the on-screen transport dropdown), and renders your active profile and App Launcher.
-* **Transport tip:** Make sure the panel's on-screen transport dropdown matches an enabled transport in the tray menu — the firmware defaults to **BLE** while the tray defaults to **USB** enabled. **USB** connects immediately once enabled on both sides; **BLE** takes a few seconds to scan and sync; **Wi-Fi** requires Wi-Fi credentials to be configured in firmware (on-screen Wi-Fi setup is not yet implemented).
 
 #### Environment 2: Custom ESP32-S3 Touchscreen Panels (`esp32s3_ble_touch`)
 Generic LVGL 8.3 UI + protocol boilerplate for other ESP32-S3 panels (such as CrowPanel 5.0" or Sunton panels):
@@ -340,11 +341,11 @@ apps = [
 ### The Host System Tray Applet (`decktray`)
 The tray applet sits in your top bar and gives instant status:
 * **Icon Status:** Green icon when an ESP32 is actively connected; gray icon when disconnected.
-* **Status line:** Displays current connection (`BLE · workstation` or `USB · workstation`) and active profile.
+* **Status line:** Displays current connection (`WiFi · workstation`, `BLE · workstation`, or `USB · workstation`) and active profile.
 * **Window Focus line:** Displays the current window class and title detected by GNOME Shell.
 * **Follow focus:** Checked by default so layouts follow window focus automatically.
 * **Pin Profile:** Clicking any profile name in the menu pins that profile override across all devices.
-* **USB / BLE Toggles:** Temporarily pause or resume USB serial or BLE polling without stopping the systemd service.
+* **USB / Wi-Fi / BLE Toggles:** Enable or pause USB serial, Wi-Fi TCP/mDNS listener (port 4650), or BLE GATT without stopping the systemd service.
 
 ### The Macro & Profile Editor GUI (`deckgui`)
 Run `./.venv/bin/python deckgui.py` to open the visual suite:
@@ -356,10 +357,12 @@ Run `./.venv/bin/python deckgui.py` to open the visual suite:
 
 ### On-Device Controls (Touchscreen)
 * **Active App Banner:** The header shows the current active application and window title.
-* **Host Dropdown:** Displays connected host identity; tap **Scan** to search for nearby computers.
+* **Transport Dropdown:** Switch directly between **USB Only**, **Wi-Fi**, and **Bluetooth** (persisted in NVS).
+* **Wi-Fi Setup (when Wi-Fi is selected):** Tap **Wi-Fi Setup** to open the on-screen provisioning view. Tap **Scan** to pick a nearby 2.4 GHz network, enter the password with the built-in keyboard (with **Show** toggle), optionally specify a host `IP[:port]` (or leave blank / tap **Auto** for `_mmdeckd._tcp` mDNS discovery), and tap **Save & Connect**. Credentials are saved to NVS across reboots.
+* **Host Dropdown (when Bluetooth is selected):** Displays connected host identity; tap **Scan** to search for nearby computers.
 * **Profile Dropdown:** Select **Follow focus** or pin any profile directly from the screen.
 * **Page Buttons (`<` / `>`) & Launcher Button:** Switch between button pages for the current profile, or tap **Launcher** directly below the pager buttons to open the paginated App Launcher grid (always includes a `< Back` button).
-* **Feedback Line:** Confirms actions dispatched to the host or displays errors if an action times out.
+* **Feedback Line:** Confirms actions dispatched to the host, Wi-Fi/IP connection state, or errors if an action times out.
 
 ---
 
@@ -374,7 +377,7 @@ Run `./.venv/bin/python deckgui.py` to open the visual suite:
   ```bash
   groups
   ```
-* If not, follow Step 1.2 in the installation guide and reboot.
+* If not, follow Step 1.2 in the installation guide and log out/in.
 
 #### 2. The daemon fails to start with a BLE error
 * Ensure your PC has Bluetooth enabled: `bluetoothctl show`.
@@ -396,8 +399,14 @@ Run `./.venv/bin/python deckgui.py` to open the visual suite:
 
 #### 4. The ESP32 screen says "Offline / Scanning..."
 * Ensure the host daemon is running (`systemctl --user status deckd.service`).
-* Verify that your host's Bluetooth adapter is powered on.
+* Verify that your host's Bluetooth adapter is powered on (for BLE mode) or **WiFi connections** is enabled in `decktray` (for Wi-Fi mode).
 * If using a custom ESP32 board, check `firmware/include/deck_config.h` to confirm the BLE service UUID matches `6E400001-B5A3-F393-E0A9-E50E24DCCA9E`.
+
+#### 5. Wi-Fi mode says "deckd at `<ip>:4650` unreachable; retrying..."
+* Confirm **WiFi connections (TCP/mDNS listener)** is enabled in `decktray` and listening on port `4650` (`ss -tlnp | grep 4650`).
+* If a host firewall (`ufw` / `firewalld`) is active, allow inbound TCP port `4650` on your local network (e.g., `sudo ufw allow 4650/tcp`).
+* **VPN / Tailscale subnet routes:** If you run Tailscale with `--accept-routes` and another node advertises your local LAN subnet, Linux can route replies to the panel into `tailscale0` instead of your Wi-Fi interface. Check with `ip route get <panel-ip>` and disable subnet-route acceptance on the host if needed (`sudo tailscale set --accept-routes=false`).
+* Ensure your Wi-Fi router does not have AP/Client Isolation enabled between devices (note that ESP32-S3 connects on 2.4 GHz).
 
 ---
 
