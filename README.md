@@ -2,7 +2,12 @@
 
 # Context-Aware Stream Deck System
 
-An open-source, wireless, context-aware macro pad and Stream Deck system designed for Linux workstations and embedded hardware (ESP32 / ESP32-S3).
+An open-source, wireless, context-aware macro pad and Stream Deck system for **Windows** (bare-minimum USB + Wi-Fi on this `StreamDeck-windows` branch) and **Linux** workstations, paired with embedded hardware (ESP32 / ESP32-S3).
+
+> **Windows Branch (`StreamDeck-windows`) Status**
+> * **Included on Windows:** USB Serial (`--port auto` COM auto-detection), Wi-Fi TCP/mDNS (`4650` / `_mmdeckd._tcp`), native Win32 `SendInput` keyboard shortcuts, native Win32 foreground window focus tracking (auto-switching profiles by `.exe` name and window title), detached background shell commands, and starter Windows profiles (`host/profiles.windows.toml`).
+> * **Not yet included on Windows:** BLE GATT server (BlueZ/Linux-only), system tray applet (`decktray`) & D-Bus IPC, remote lock-screen unlock (blocked by Windows Secure Desktop), and Linux `.desktop` App Launcher discovery.
+> * See **[Windows Setup Guide (`docs/WINDOWS.md`)](docs/WINDOWS.md)** or jump straight to [Windows Quick Start](#step-1-host-installation-windows--usb--wi-fi) below.
 
 Unlike conventional macro pads that only simulate key combinations blindly, this system maintains a **continuous two-way synchronization link** between your PC and the device. It automatically detects which application currently has window focus (e.g., VS Code, Firefox, Terminal, CAD), dynamically pushes the relevant button labels, icons, and colors to the device screen, and confirms every button action.
 
@@ -73,9 +78,14 @@ Stream_Deck/
 ├── README.md                      # This documentation
 ├── docs/
 │   ├── PROTOCOL.md                # Complete DECK newline protocol specification
-│   └── HARDWARE_GUIDE.md          # Wiring, display setup, and board porting notes
-├── host/                          # Linux host daemon, tray, GUI, and services
-│   ├── deckd.py                   # Core background daemon
+│   ├── HARDWARE_GUIDE.md          # Wiring, display setup, and board porting notes
+│   └── WINDOWS.md                 # Windows bare-minimum USB + Wi-Fi setup guide
+├── host/                          # Host daemon, Windows backend, tray, GUI, and services
+│   ├── deckd.py                   # Core background daemon (Linux + Windows)
+│   ├── win_platform.py            # Windows backend (Win32 SendInput, focus watcher, COM auto-detect)
+│   ├── profiles.windows.toml      # Starter button profiles for Windows
+│   ├── requirements-windows.txt   # Minimal Windows Python dependencies (pyserial, zeroconf)
+│   ├── run-windows.ps1            # One-command Windows venv setup & launcher
 │   ├── desktop_apps.py            # Portable Linux XDG .desktop app discovery & launch helpers
 │   ├── ble_deck.py                # BlueZ BLE GATT server (NUS profile)
 │   ├── decktray.py                # System tray status applet (pure D-Bus)
@@ -112,10 +122,15 @@ Stream_Deck/
 ## System Requirements
 
 ### Host (PC)
-* **OS:** Linux (Ubuntu 22.04+, Debian 12+, Fedora, Arch).
-* **Desktop Environment:** GNOME (Wayland or X11) recommended for automated focus tracking. Other desktop environments work with manual profile selection via the tray or GUI.
-* **Connectivity:** Local Wi-Fi/LAN (TCP port 4650 + mDNS), Bluetooth 4.0+ adapter (BlueZ) for BLE wireless mode, or an available USB port for wired serial mode.
-* **Python:** Python 3.10+ with `venv`.
+* **Windows (Bare-Minimum USB + Wi-Fi):**
+  * **OS:** Windows 10 or Windows 11.
+  * **Connectivity:** Local Wi-Fi/LAN (TCP port `4650` + mDNS) and/or an available USB port (ESP32-S3 native USB CDC works with built-in drivers; CP210x/CH340 boards may need their standard USB-UART driver).
+  * **Python:** Python 3.11+ (`winget install Python.Python.3.12` or python.org).
+* **Linux (Full Feature Set):**
+  * **OS:** Linux (Ubuntu 22.04+, Debian 12+, Fedora, Arch).
+  * **Desktop Environment:** GNOME (Wayland or X11) recommended for automated focus tracking. Other desktop environments work with manual profile selection via the tray or GUI.
+  * **Connectivity:** Local Wi-Fi/LAN (TCP port 4650 + mDNS), Bluetooth 4.0+ adapter (BlueZ) for BLE wireless mode, or an available USB port for wired serial mode.
+  * **Python:** Python 3.10+ with `venv`.
 
 ### Target Device (Microcontroller)
 * **MCU:** ESP32 or ESP32-S3 (with Bluetooth LE support).
@@ -126,7 +141,32 @@ Stream_Deck/
 
 ## Setup & Installation
 
-### Step 1: Host Installation (Linux Workstation)
+### Step 1: Host Installation (Windows — USB + Wi-Fi)
+
+1. **Run the PowerShell launcher from the repository root:**
+   ```powershell
+   .\host\run-windows.ps1
+   ```
+   *On first run, this creates `host\.venv-win`, installs `pyserial` and `zeroconf`, loads `host\profiles.windows.toml`, and starts `deckd.py` with both **USB (`--port auto`)** and **Wi-Fi (TCP 4650 + mDNS)** enabled.*
+
+2. **Optional flags:**
+   ```powershell
+   .\host\run-windows.ps1 --port COM4   # Pin a specific COM port
+   .\host\run-windows.ps1 --no-usb      # Wi-Fi only (keeps COM port free for flashing)
+   .\host\run-windows.ps1 --no-wifi     # USB only
+   .\host\run-windows.ps1 -v            # Verbose logging (focus changes & protocol traffic)
+   ```
+
+3. **Allow Wi-Fi through Windows Defender Firewall (one-time, Administrator PowerShell):**
+   ```powershell
+   New-NetFirewallRule -DisplayName "StreamDeck deckd" -Direction Inbound -Protocol TCP -LocalPort 4650 -Action Allow -Profile Private
+   ```
+
+4. **Customize your buttons:** Edit `host\profiles.windows.toml` (`deckd` hot-reloads changes automatically). Process matching uses lowercase `.exe` stems (e.g. `code`, `msedge`, `chrome`, `firefox`, `windowsterminal`). See [docs/WINDOWS.md](docs/WINDOWS.md) for full details.
+
+---
+
+### Step 1 (Linux): Host Installation (Linux Workstation)
 
 #### Option A: Debian Package (Ubuntu 26.04 amd64 — Recommended)
 Build and install the `.deb` package (see [host/packaging/README.md](host/packaging/README.md) for full details):
@@ -411,5 +451,6 @@ Run `./.venv/bin/python deckgui.py` to open the visual suite:
 ---
 
 ## Additional Documentation
+* **[Windows Setup Guide (`docs/WINDOWS.md`)](docs/WINDOWS.md):** Bare-minimum Windows USB + Wi-Fi setup, flags, and firewall notes.
 * **[Protocol Specification (`docs/PROTOCOL.md`)](docs/PROTOCOL.md):** Detailed reference for the line-based `DECK` protocol.
 * **[Hardware Porting Guide (`docs/HARDWARE_GUIDE.md`)](docs/HARDWARE_GUIDE.md):** Pin definitions, display controllers, and physical button wiring.
