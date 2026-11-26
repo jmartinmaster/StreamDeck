@@ -20,7 +20,7 @@
 Connects to the deck over USB serial, WiFi TCP (advertised via mDNS as
 ``_mmdeckd._tcp``), or Bluetooth LE (NUS GATT), pushes button layouts and
 launcher apps from profiles.toml, and executes shortcuts, shell commands, or
-XDG desktop applications when the device reports a button press.
+platform-native desktop applications when the device reports a button press.
 """
 
 from __future__ import annotations
@@ -43,26 +43,50 @@ from pathlib import Path
 
 import serial
 
-try:
-    from desktop_apps import (
-        DesktopApp,
-        discover_desktop_apps,
-        guess_deck_icon,
-        launch_desktop_app,
-        normalize_desktop_id,
-        short_label,
-        suggest_smart_defaults,
-    )
-except ImportError:  # pragma: no cover - package import fallback
-    from .desktop_apps import (  # type: ignore[no-redef]
-        DesktopApp,
-        discover_desktop_apps,
-        guess_deck_icon,
-        launch_desktop_app,
-        normalize_desktop_id,
-        short_label,
-        suggest_smart_defaults,
-    )
+IS_WINDOWS = sys.platform == "win32"
+
+if IS_WINDOWS:
+    try:
+        from win_apps import (
+            WindowsApp as DesktopApp,
+            discover_windows_apps as discover_desktop_apps,
+            guess_deck_icon,
+            launch_desktop_app,
+            normalize_desktop_id,
+            short_label,
+            suggest_smart_defaults,
+        )
+    except ImportError:  # pragma: no cover - package import fallback
+        from .win_apps import (  # type: ignore[no-redef]
+            WindowsApp as DesktopApp,
+            discover_windows_apps as discover_desktop_apps,
+            guess_deck_icon,
+            launch_desktop_app,
+            normalize_desktop_id,
+            short_label,
+            suggest_smart_defaults,
+        )
+else:
+    try:
+        from desktop_apps import (
+            DesktopApp,
+            discover_desktop_apps,
+            guess_deck_icon,
+            launch_desktop_app,
+            normalize_desktop_id,
+            short_label,
+            suggest_smart_defaults,
+        )
+    except ImportError:  # pragma: no cover - package import fallback
+        from .desktop_apps import (  # type: ignore[no-redef]
+            DesktopApp,
+            discover_desktop_apps,
+            guess_deck_icon,
+            launch_desktop_app,
+            normalize_desktop_id,
+            short_label,
+            suggest_smart_defaults,
+        )
 
 try:
     from evdev import UInput, ecodes
@@ -128,7 +152,7 @@ except ImportError:  # pragma: no cover - package import fallback
         find_default_serial_port,
     )
 
-IS_WINDOWS = sys.platform == "win32"
+HAVE_BLE = HAVE_BLE and not IS_WINDOWS
 
 log = logging.getLogger("deckd")
 
@@ -620,7 +644,7 @@ def _resolve_launcher_config(raw: dict) -> LauncherConfig:
             meta = app_map.get(desktop_id)
             raw_label = str(entry.get("label", "")).strip()
             if not raw_label:
-                raw_label = short_label(meta.name) if meta else desktop_id[:-8]
+                raw_label = short_label(meta.name) if meta else desktop_id.removesuffix(".desktop")
             icon = entry.get("icon") or (guess_deck_icon(meta) if meta else "app")
             color = entry.get("color") or "accent"
             buttons.append(Button(
@@ -1660,7 +1684,7 @@ def run(args: argparse.Namespace) -> int:
     unlock_key_arg = getattr(args, "unlock_key", None)
     unlock_store = (
         UnlockKeyStore(Path(unlock_key_arg) if unlock_key_arg else None)
-        if HAVE_UNLOCK_CRYPTO and UnlockKeyStore is not None
+        if not IS_WINDOWS and HAVE_UNLOCK_CRYPTO and UnlockKeyStore is not None
         else None
     )
     if sys.platform == "win32":
@@ -1875,7 +1899,11 @@ def main() -> int:
     parser.add_argument(
         "--unlock-key",
         default=None,
-        help="path to host unlock pairing keypair file (default: ~/.config/mmesp32-deckd/unlock.key)",
+        help=(
+            "path to host unlock pairing keypair file "
+            "(default: %%LOCALAPPDATA%%\\StreamDeck\\unlock.key on Windows; "
+            "~/.config/mmesp32-deckd/unlock.key on Linux)"
+        ),
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()

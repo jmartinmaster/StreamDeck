@@ -15,14 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Stream Deck.  If not, see <https://www.gnu.org/licenses/>.
 
-"""D-Bus control service for deckd (org.mmesp32.Deckd).
+"""Local control service for deckd (D-Bus on Linux, loopback JSON on Windows).
 
 Kept in its own module WITHOUT ``from __future__ import annotations``:
 dbus-next reads D-Bus signatures from literal function annotations, and
-PEP 563 stringification would corrupt them.
-
-Runs an asyncio MessageBus in a daemon thread, mirroring FocusWatcher in
-deckd.py. Thread-safety contract:
+PEP 563 stringification would corrupt them. On Linux it runs an asyncio
+MessageBus in a daemon thread, mirroring FocusWatcher in deckd.py; Windows
+uses the local JSON control server. Thread-safety contract:
 - ``set_override``/``override`` guard a single string with a lock.
 - ``publish`` is called from the daemon main thread; it stores a status
   snapshot and schedules a StatusChanged emission on the bus loop.
@@ -32,6 +31,7 @@ deckd.py. Thread-safety contract:
 
 import asyncio
 import logging
+import sys
 import threading
 import time
 
@@ -91,17 +91,18 @@ if HAVE_DBUS:
 
 
 class DeckControl:
-    """Exports the deckd control interface on the session bus."""
+    """Expose the deckd control API through the current platform's IPC."""
 
     def __init__(self, profiles, bus_name=CONTROL_BUS_NAME,
                  object_path=CONTROL_OBJECT_PATH, ble_enabled=False,
                  usb_enabled=False, wifi_enabled=False):
         self._profiles = profiles
+        self._is_windows = sys.platform == "win32"
         self.bus_name = bus_name
         self.object_path = object_path
         self._lock = threading.Lock()
         self._override = ""
-        self._ble_enabled = bool(ble_enabled)
+        self._ble_enabled = bool(ble_enabled) and not self._is_windows
         self._usb_enabled = bool(usb_enabled)
         self._wifi_enabled = bool(wifi_enabled)
         self._unlock_pairing_until = 0.0
@@ -120,10 +121,22 @@ class DeckControl:
         self._loop = None
         self._interface = None
         self._thread = None
+        self._windows_server = None
 
     # -- main-thread API -------------------------------------------------
 
     def start(self):
+        if self._is_windows:
+            try:
+                try:
+                    from win_control import WindowsControlServer
+                except ImportError:  # pragma: no cover - package import fallback
+                    from .win_control import WindowsControlServer
+                self._windows_server = WindowsControlServer(self)
+                self._windows_server.start()
+            except OSError:
+                log.exception("Windows control interface could not start")
+            return
         if not HAVE_DBUS:
             log.warning("dbus-next not installed; control interface disabled")
             return
@@ -141,6 +154,9 @@ class DeckControl:
             return self._ble_enabled
 
     def set_ble_enabled(self, enabled):
+        if self._is_windows and enabled:
+            log.warning("BLE is not supported on Windows; request ignored")
+            return
         with self._lock:
             self._ble_enabled = bool(enabled)
         log.info("BLE connections %s", "enabled" if enabled else "disabled")
@@ -195,7 +211,7 @@ class DeckControl:
         if loop is not None and interface is not None:
             loop.call_soon_threadsafe(interface.StatusChanged)
 
-    # -- bus-thread / shared API ------------------------------------------
+    # -- IPC / shared API -------------------------------------------------
 
     def profile_ids(self):
         return sorted(self._profiles.keys())
@@ -203,6 +219,9 @@ class DeckControl:
     def status(self):
         with self._lock:
             snap = dict(self._status)
+            snap["override"] = self._override
+            if self._is_windows:
+                snap["ble"] = "0"
             snap["unlock_pairing"] = (
                 "1" if time.monotonic() < self._unlock_pairing_until else "0"
             )
@@ -215,6 +234,33 @@ class DeckControl:
                 return
             self._override = profile
         log.info("profile override: %s", profile or "(follow focus)")
+        self.publish(override=profile)
+
+    def dispatch(self, method, args):
+        """Validate and dispatch one request from the Windows loopback API."""
+        if method == "ListProfiles" and not args:
+            return self.profile_ids()
+        if method == "GetStatus" and not args:
+            return self.status()
+        if method == "SetOverride" and len(args) == 1 and isinstance(args[0], str):
+            profile = args[0]
+            if profile and profile not in self._profiles:
+                raise ValueError(f"unknown profile: {profile}")
+            self.set_override(profile)
+            return None
+        boolean_methods = {
+            "SetBleEnabled": self.set_ble_enabled,
+            "SetUsbEnabled": self.set_usb_enabled,
+            "SetWifiEnabled": self.set_wifi_enabled,
+        }
+        if method in boolean_methods and len(args) == 1 and type(args[0]) is bool:
+            if method == "SetBleEnabled" and self._is_windows and args[0]:
+                raise ValueError("BLE is not supported on Windows")
+            boolean_methods[method](args[0])
+            return None
+        if method == "EnableUnlockPairing":
+            raise ValueError("remote lock-screen unlock is not supported on Windows")
+        raise ValueError(f"unsupported control request: {method}")
 
     # -- bus thread --------------------------------------------------------
 

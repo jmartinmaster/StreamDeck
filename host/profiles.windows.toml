@@ -1,20 +1,54 @@
-# Starter Stream Deck profiles for Windows (USB Serial + Wi-Fi).
-# Process names from WinFocusWatcher are lowercase executable stems
-# (e.g. "code" for Code.exe, "msedge" for msedge.exe, "windowsterminal" for WindowsTerminal.exe).
-
 [[app.default.groups]]
 title = "Quick Launch"
 color = "accent"
-buttons = [
-    { label = "Term", shell = "wt", icon = "terminal", color = "warn" },
-    { label = "Files", shell = "explorer", icon = "folder", color = "accent" },
-    { label = "Browser", shell = "start https://google.com", icon = "globe", color = "accent" },
-    { label = "Code", shell = "code", icon = "code", color = "accent" },
-    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
-    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
-    { label = "Snip", keys = "super+shift+s", icon = "camera", color = "good" },
-    { label = "Lock", shell = "rundll32.exe user32.dll,LockWorkStation", icon = "lock", color = "bad" },
-]
+
+[[app.default.groups.buttons]]
+label = "Term"
+shell = "wt"
+icon = "terminal"
+color = "warn"
+
+[[app.default.groups.buttons]]
+label = "Files"
+shell = "explorer"
+icon = "folder"
+color = "accent"
+
+[[app.default.groups.buttons]]
+label = "Browser"
+shell = "start https://google.com"
+icon = "globe"
+color = "accent"
+
+[[app.default.groups.buttons]]
+label = "Code"
+shell = "code"
+icon = "code"
+color = "accent"
+
+[[app.default.groups.buttons]]
+label = "Copy"
+keys = "ctrl+c"
+icon = "copy"
+color = "idle"
+
+[[app.default.groups.buttons]]
+label = "Paste"
+keys = "ctrl+v"
+icon = "paste"
+color = "idle"
+
+[[app.default.groups.buttons]]
+label = "Snip"
+keys = "super+shift+s"
+icon = "camera"
+color = "good"
+
+[[app.default.groups.buttons]]
+label = "Lock"
+shell = "rundll32.exe user32.dll,LockWorkStation"
+icon = "lock"
+color = "bad"
 
 [[app.default.groups]]
 title = "Media & System"
@@ -45,8 +79,13 @@ buttons = [
 ]
 
 [app.code]
-aliases = ["code", "code - insiders"]
-match_title = ["Visual Studio Code"]
+aliases = [
+    "code",
+    "code - insiders",
+]
+match_title = [
+    "Visual Studio Code",
+]
 
 [[app.code.groups]]
 title = "Editor"
@@ -77,8 +116,18 @@ buttons = [
 ]
 
 [app.browser]
-aliases = ["msedge", "chrome", "firefox", "brave"]
-match_title = ["Microsoft Edge", "Google Chrome", "Mozilla Firefox", "Brave"]
+aliases = [
+    "msedge",
+    "chrome",
+    "firefox",
+    "brave",
+]
+match_title = [
+    "Microsoft Edge",
+    "Google Chrome",
+    "Mozilla Firefox",
+    "Brave",
+]
 
 [[app.browser.groups]]
 title = "Navigation"
@@ -109,8 +158,17 @@ buttons = [
 ]
 
 [app.windowsterminal]
-aliases = ["windowsterminal", "powershell", "pwsh", "cmd"]
-match_title = ["Windows PowerShell", "Command Prompt", "Terminal"]
+aliases = [
+    "windowsterminal",
+    "powershell",
+    "pwsh",
+    "cmd",
+]
+match_title = [
+    "Windows PowerShell",
+    "Command Prompt",
+    "Terminal",
+]
 
 [[app.windowsterminal.groups]]
 title = "Terminal"

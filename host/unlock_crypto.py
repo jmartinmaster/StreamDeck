@@ -43,6 +43,9 @@ def default_unlock_key_path() -> Path:
     env_path = os.environ.get("DECKD_UNLOCK_KEY", "").strip()
     if env_path:
         return Path(env_path)
+    if os.name == "nt":
+        config_root = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+        return config_root / "StreamDeck" / "unlock.key"
     cfg_root = Path(os.environ.get("XDG_CONFIG_HOME") or (Path.home() / ".config"))
     return cfg_root / "mmesp32-deckd" / "unlock.key"
 

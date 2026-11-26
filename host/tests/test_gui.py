@@ -228,7 +228,28 @@ class TestDeckGui(unittest.TestCase):
         from unittest.mock import Mock
 
         win = DeckMainWindow(profiles_path=self.profiles_path)
-        win.dbus_iface = Mock()
+        if deckgui.IS_WINDOWS:
+            win.control_client = Mock()
+            status = {
+                "transport": "none",
+                "active_profile": "default",
+                "override": "",
+                "focus_app": "",
+                "focus_title": "",
+                "connected": "0",
+                "usb": "0",
+                "wifi": "0",
+                "ble": "0",
+            }
+            win.control_client.call.side_effect = (
+                lambda method, *_args: status if method == "GetStatus" else None
+            )
+            control_call = win.control_client.call
+            self.assertTrue(win.chk_ble.isHidden())
+            self.assertNotIn("ble", win._connect_mode_buttons)
+        else:
+            win.dbus_iface = Mock()
+            control_call = win.dbus_iface.call
 
         win._connect_tab_auto_checked = False
         win.tabs.setCurrentIndex(0)
@@ -249,18 +270,18 @@ class TestDeckGui(unittest.TestCase):
         self.assertFalse(win.chk_ble.isChecked())
         self.assertIn("IDLE", win.lbl_connect_state.text())
 
-        win.dbus_iface.call.reset_mock()
+        control_call.reset_mock()
         win.select_connection_mode("wifi")
-        calls = [c.args for c in win.dbus_iface.call.call_args_list if c.args[0].startswith("Set")]
+        calls = [c.args for c in control_call.call_args_list if c.args[0].startswith("Set")]
         self.assertEqual(calls, [
             ("SetUsbEnabled", False),
             ("SetWifiEnabled", True),
             ("SetBleEnabled", False),
         ])
 
-        win.dbus_iface.call.reset_mock()
+        control_call.reset_mock()
         win.select_connection_mode("usb")
-        calls = [c.args for c in win.dbus_iface.call.call_args_list if c.args[0].startswith("Set")]
+        calls = [c.args for c in control_call.call_args_list if c.args[0].startswith("Set")]
         self.assertEqual(calls, [
             ("SetUsbEnabled", True),
             ("SetWifiEnabled", False),
@@ -281,7 +302,8 @@ class TestDeckGui(unittest.TestCase):
         self.assertEqual(data.get("app"), "firefox.desktop")
         self.assertNotIn("keys", data)
         self.assertNotIn("shell", data)
-        self.assertIn("installed Linux app", win.lbl_shortcut_valid.text())
+        expected_app = "Windows Start Menu app" if deckgui.IS_WINDOWS else "installed Linux app"
+        self.assertIn(expected_app, win.lbl_shortcut_valid.text())
 
     def test_launcher_tab_add_reorder_auto_return_and_save(self):
         sample_apps = [

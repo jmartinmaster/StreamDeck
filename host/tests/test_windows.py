@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ctypes
+import subprocess
 import sys
 import time
 import types
@@ -163,6 +164,32 @@ class SerialPortAutoDetectTests(unittest.TestCase):
 
 
 class DeckdWindowsWiringTests(unittest.TestCase):
+    def test_cli_help_formats_windows_unlock_path(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(HOST_DIR / "deckd.py"), "--help"],
+            cwd=HOST_DIR,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertIn("%LOCALAPPDATA%\\StreamDeck\\unlock.key", result.stdout)
+
+    @unittest.skipUnless(sys.platform == "win32", "Windows app backend only")
+    def test_windows_uses_start_menu_apps_and_disables_ble(self) -> None:
+        import win_apps
+
+        self.assertIs(deckd.discover_desktop_apps, win_apps.discover_windows_apps)
+        self.assertFalse(deckd.HAVE_BLE)
+
+    @unittest.skipUnless(sys.platform == "win32", "Windows app backend only")
+    def test_device_launcher_dispatches_windows_app_id(self) -> None:
+        app_id = "startmenu:user:Accessories/Calculator.lnk"
+        launcher = deckd.LauncherConfig(apps=[deckd.Button(label="Calc", app=app_id)])
+        session = deckd.DeckSession(None, {"default": deckd.Profile("default")}, None, launcher=launcher)
+        with mock.patch.object(deckd, "launch_desktop_app") as launch:
+            session.run_launcher_button(0)
+        launch.assert_called_once_with(app_id)
+
     def test_windows_profiles_toml_parses_and_all_keys_valid(self) -> None:
         win_toml = HOST_DIR / "profiles.windows.toml"
         self.assertTrue(win_toml.is_file())

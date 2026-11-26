@@ -20,8 +20,8 @@
 Provides a fast, visual, and intuitive interface to:
 1. Configure and preview 16-button macro layouts (2 action groups x 8 columns).
 2. Full multi-page support: navigate and visually edit all groups (Groups 1&2, 3&4, etc.).
-3. Edit actions (Keys, Shell, or XDG Installed App), icons, and semantic colors.
-4. Curate the hardware App Launcher grid and auto-return behavior from Linux desktop entries.
+3. Edit actions (Keys, Shell, or installed app), icons, and semantic colors.
+4. Curate the hardware App Launcher grid and auto-return behavior.
 5. Edit raw profiles.toml directly with syntax highlighting and validation.
 6. Manage daemon connection modes (USB, Wi-Fi, BLE, Idle) and optional post-save sync hooks.
 """
@@ -30,12 +30,15 @@ import os
 import sys
 from pathlib import Path
 
+IS_WINDOWS = sys.platform == "win32"
+
 # GNOME 44+ moved xsettings keys causing GLib abort in Qt's GNOME platform theme.
-# Overriding XDG_CURRENT_DESKTOP and forcing Fusion style avoids this crash completely.
-if os.environ.get("XDG_CURRENT_DESKTOP") in ("GNOME", "ubuntu:GNOME"):
-    os.environ["XDG_CURRENT_DESKTOP"] = "Generic"
-os.environ.setdefault("QT_QPA_PLATFORMTHEME", "generic")
-os.environ.setdefault("QT_STYLE_OVERRIDE", "Fusion")
+# These workarounds are Linux-specific; forcing Fusion crashes Qt on Windows.
+if sys.platform.startswith("linux"):
+    if os.environ.get("XDG_CURRENT_DESKTOP") in ("GNOME", "ubuntu:GNOME"):
+        os.environ["XDG_CURRENT_DESKTOP"] = "Generic"
+    os.environ.setdefault("QT_QPA_PLATFORMTHEME", "generic")
+    os.environ.setdefault("QT_STYLE_OVERRIDE", "Fusion")
 
 import copy
 import json
@@ -57,40 +60,77 @@ except ImportError:
     HAVE_QTDBUS = False
 
 try:
-    from deckd import key_token_to_code
+    if IS_WINDOWS:
+        from win_platform import key_token_to_vk as key_token_validator
+    else:
+        from deckd import key_token_to_code as key_token_validator
 except ImportError:
     try:
-        from .deckd import key_token_to_code
+        if IS_WINDOWS:
+            from .win_platform import key_token_to_vk as key_token_validator
+        else:
+            from .deckd import key_token_to_code as key_token_validator
     except ImportError:
-        key_token_to_code = None
+        key_token_validator = None
 
-try:
-    from desktop_apps import (
-        DesktopApp,
-        discover_desktop_apps,
-        guess_deck_icon,
-        launch_desktop_app,
-        normalize_desktop_id,
-        short_label,
-        suggest_smart_defaults,
-    )
-except ImportError:
-    from .desktop_apps import (
-        DesktopApp,
-        discover_desktop_apps,
-        guess_deck_icon,
-        launch_desktop_app,
-        normalize_desktop_id,
-        short_label,
-        suggest_smart_defaults,
-    )
+if IS_WINDOWS:
+    try:
+        from win_apps import (
+            WindowsApp as DesktopApp,
+            discover_windows_apps as discover_desktop_apps,
+            guess_deck_icon,
+            launch_desktop_app,
+            normalize_desktop_id,
+            short_label,
+            suggest_smart_defaults,
+        )
+        from win_control import WindowsControlClient
+    except ImportError:
+        from .win_apps import (
+            WindowsApp as DesktopApp,
+            discover_windows_apps as discover_desktop_apps,
+            guess_deck_icon,
+            launch_desktop_app,
+            normalize_desktop_id,
+            short_label,
+            suggest_smart_defaults,
+        )
+        from .win_control import WindowsControlClient
+else:
+    try:
+        from desktop_apps import (
+            DesktopApp,
+            discover_desktop_apps,
+            guess_deck_icon,
+            launch_desktop_app,
+            normalize_desktop_id,
+            short_label,
+            suggest_smart_defaults,
+        )
+    except ImportError:
+        from .desktop_apps import (
+            DesktopApp,
+            discover_desktop_apps,
+            guess_deck_icon,
+            launch_desktop_app,
+            normalize_desktop_id,
+            short_label,
+            suggest_smart_defaults,
+        )
 
 log = logging.getLogger("deckgui")
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_PROFILES_PATH = Path(os.environ.get("DECKD_PROFILES", str(SCRIPT_DIR / "profiles.toml")))
-CONFIG_DIR = Path.home() / ".config" / "deckd"
+DEFAULT_PROFILE_FILE = "profiles.windows.toml" if sys.platform == "win32" else "profiles.toml"
+DEFAULT_PROFILES_PATH = Path(os.environ.get(
+    "DECKD_PROFILES", str(SCRIPT_DIR / DEFAULT_PROFILE_FILE)))
+CONFIG_DIR = (
+    Path(os.environ.get("LOCALAPPDATA", Path.home())) / "StreamDeck"
+    if IS_WINDOWS
+    else Path.home() / ".config" / "deckd"
+)
 SETTINGS_FILE = CONFIG_DIR / "settings.json"
+LEGACY_SETTINGS_FILE = Path.home() / ".config" / "deckd" / "settings.json"
 LOCAL_SERVER_NAME = "streamdeck_deckgui_server"
 
 SEMANTIC_COLORS = {
@@ -401,11 +441,16 @@ def load_settings():
         "auto_run_post_save": False,
         "profiles_path": str(DEFAULT_PROFILES_PATH),
     }
-    if SETTINGS_FILE.is_file():
+    source = SETTINGS_FILE
+    if IS_WINDOWS and not source.is_file() and LEGACY_SETTINGS_FILE.is_file():
+        source = LEGACY_SETTINGS_FILE
+    if source.is_file():
         try:
-            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            with open(source, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 defaults.update(data)
+            if source != SETTINGS_FILE:
+                save_settings(defaults)
         except Exception as e:
             log.warning("Could not load settings: %s", e)
     return defaults
@@ -626,11 +671,12 @@ class ShortcutRecordDialog(QtWidgets.QDialog):
 
 
 class AppPickerDialog(QtWidgets.QDialog):
-    """Searchable dialog to pick a Linux XDG desktop application."""
+    """Searchable dialog to choose an installed platform application."""
 
     def __init__(self, apps=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Pick Installed Linux Application")
+        title = "Pick Windows Start Menu App" if IS_WINDOWS else "Pick Installed Linux Application"
+        self.setWindowTitle(title)
         self.resize(520, 460)
         self.setModal(True)
         self.selected_app = None
@@ -901,6 +947,7 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         self.clipboard_data = None
         self.dbus_bus = None
         self.dbus_iface = None
+        self.control_client = WindowsControlClient() if IS_WINDOWS else None
         self.poll_timer = None
         self._connect_tab_auto_checked = False
         self._last_deckd_status = {}
@@ -919,7 +966,7 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         self.setMinimumSize(940, 700)
 
         self.setup_ui()
-        self.setup_dbus_integration()
+        self.setup_control_integration()
         self.load_profiles_from_file()
 
         self.status_updated.connect(self.on_status_updated)
@@ -931,7 +978,7 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         root_layout.setContentsMargins(14, 12, 14, 12)
         root_layout.setSpacing(10)
 
-        # Top Bar: Live D-Bus Status & Deck Connection
+        # Top bar: daemon status and deck connection
         top_bar = QtWidgets.QFrame(self)
         top_bar.setStyleSheet("""
             QFrame {
@@ -1309,13 +1356,20 @@ class DeckMainWindow(QtWidgets.QMainWindow):
 
         self.ins_action_val = QtWidgets.QLineEdit(inspector)
         self.ins_action_val.setStyleSheet("font-family: monospace;")
-        self.ins_action_val.setPlaceholderText("e.g. ctrl+s, f5, bash command, or app .desktop ID")
+        app_id_hint = "Start Menu app ID" if IS_WINDOWS else "app .desktop ID"
+        self.ins_action_val.setPlaceholderText(
+            f"e.g. ctrl+s, f5, shell command, or {app_id_hint}"
+        )
         self.ins_action_val.textChanged.connect(self.on_inspector_changed)
         act_row.addWidget(self.ins_action_val, 1)
 
         self.btn_pick_app = QtWidgets.QPushButton("Pick App\u2026", inspector)
         self.btn_pick_app.setStyleSheet("color: #38bdf8; font-weight: bold;")
-        self.btn_pick_app.setToolTip("Choose an installed Linux application (.desktop) to launch")
+        app_picker_hint = (
+            "Choose a Windows Start Menu shortcut to launch"
+            if IS_WINDOWS else "Choose an installed Linux application (.desktop) to launch"
+        )
+        self.btn_pick_app.setToolTip(app_picker_hint)
         self.btn_pick_app.clicked.connect(self.pick_installed_app_for_button)
         act_row.addWidget(self.btn_pick_app)
 
@@ -1435,8 +1489,9 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         cols = QtWidgets.QHBoxLayout()
         cols.setSpacing(12)
 
-        # Left column: all installed XDG apps on this host
-        left_box = QtWidgets.QGroupBox("Installed Linux Applications", parent)
+        # Left column: installed apps discovered for this platform
+        app_platform = "Windows Start Menu Applications" if IS_WINDOWS else "Installed Linux Applications"
+        left_box = QtWidgets.QGroupBox(app_platform, parent)
         left_box.setStyleSheet("QGroupBox { border: 1px solid #1e293b; background: #111827; border-radius: 8px; padding-top: 14px; color: #e2e8f0; font-weight: bold; }")
         left_l = QtWidgets.QVBoxLayout(left_box)
         left_l.setContentsMargins(10, 14, 10, 10)
@@ -1572,7 +1627,11 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         l_hw.setContentsMargins(14, 16, 14, 14)
         l_hw.setSpacing(10)
 
-        self.chk_usb = QtWidgets.QCheckBox("Enable USB Serial connection (/dev/ttyUSB0)", box_hw)
+        usb_label = (
+            "Enable USB Serial connection (auto-detected COM port)"
+            if IS_WINDOWS else "Enable USB Serial connection (/dev/ttyUSB0)"
+        )
+        self.chk_usb = QtWidgets.QCheckBox(usb_label, box_hw)
         self.chk_usb.setChecked(False)
         self.chk_usb.toggled.connect(self.toggle_usb)
         l_hw.addWidget(self.chk_usb)
@@ -1586,6 +1645,8 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         self.chk_ble.setChecked(False)
         self.chk_ble.toggled.connect(self.toggle_ble)
         l_hw.addWidget(self.chk_ble)
+        if IS_WINDOWS:
+            self.chk_ble.setVisible(False)
 
         layout.addWidget(box_hw)
         layout.addStretch()
@@ -1599,9 +1660,14 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         title.setStyleSheet("color: #f8fafc; font-size: 18px; font-weight: bold;")
         layout.addWidget(title)
 
-        subtitle = QtWidgets.QLabel(
+        subtitle_text = (
+            "Choose USB Serial or Wi-Fi. USB uses the auto-detected COM port; Wi-Fi listens on TCP 4650."
+            if IS_WINDOWS else
             "deckd starts IDLE with all transports off so Bluetooth is silent and /dev/ttyUSB0 stays free. "
-            "Pick a transport below when you are ready to connect your Stream Deck.",
+            "Pick a transport below when you are ready to connect your Stream Deck."
+        )
+        subtitle = QtWidgets.QLabel(
+            subtitle_text,
             parent,
         )
         subtitle.setWordWrap(True)
@@ -1619,7 +1685,7 @@ class DeckMainWindow(QtWidgets.QMainWindow):
             (
                 "usb",
                 "USB Serial (Default on S3)",
-                "Connect directly over /dev/ttyUSB0. Leaves Wi-Fi listener and Bluetooth OFF.",
+                "Connect directly over the selected serial port. Leaves Wi-Fi and Bluetooth OFF.",
                 "Connect via USB",
                 "#0284c7",
             ),
@@ -1640,11 +1706,17 @@ class DeckMainWindow(QtWidgets.QMainWindow):
             (
                 "idle",
                 "Idle (All Transports Off)",
-                "Disable USB, Wi-Fi, and Bluetooth listeners. Keeps /dev/ttyUSB0 free for flashing or serial tools.",
+                (
+                    "Disable USB and Wi-Fi listeners."
+                    if IS_WINDOWS else
+                    "Disable USB, Wi-Fi, and Bluetooth listeners. Keeps /dev/ttyUSB0 free for flashing or serial tools."
+                ),
                 "Set Idle",
                 "#475569",
             ),
         ]
+        if IS_WINDOWS:
+            modes = [mode for mode in modes if mode[0] != "ble"]
 
         grid = QtWidgets.QGridLayout()
         grid.setSpacing(12)
@@ -1681,9 +1753,15 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         layout.addLayout(grid)
         layout.addStretch()
 
-    # --- D-Bus Integration ---
+    # --- Daemon control integration ---
 
-    def setup_dbus_integration(self):
+    def setup_control_integration(self):
+        if IS_WINDOWS:
+            self.poll_timer = QtCore.QTimer(self)
+            self.poll_timer.timeout.connect(self.poll_deckd_status)
+            self.poll_timer.start(1500)
+            self.poll_deckd_status()
+            return
         if not HAVE_QTDBUS:
             self.lbl_conn_status.setText("● deckd: D-Bus library unavailable")
             return
@@ -1717,6 +1795,24 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         self.poll_deckd_status()
 
     def poll_deckd_status(self):
+        if IS_WINDOWS:
+            try:
+                status = self.control_client.call("GetStatus")
+            except (OSError, RuntimeError, ValueError) as error:
+                log.debug("Windows deckd status unavailable: %s", error)
+                self._last_deckd_status = {}
+                self.lbl_conn_status.setText("○ deckd: Offline")
+                self.lbl_conn_status.setStyleSheet(
+                    "color: #ef4444; font-weight: bold; font-size: 12px;"
+                )
+                self.lbl_focus_status.setText("Window Focus: Daemon offline")
+                self.lbl_connect_state.setText("Current State: deckd service is offline.")
+                return
+            if isinstance(status, dict):
+                self.apply_deckd_status(status)
+            else:
+                log.warning("Windows deckd returned an invalid status payload")
+            return
         if not self.dbus_iface:
             return
         reply = self.dbus_iface.call("GetStatus")
@@ -1789,7 +1885,8 @@ class DeckMainWindow(QtWidgets.QMainWindow):
         if conn:
             state_msg = f"Current State: Connected via {transport} (Profile: {active_p})"
         elif idle:
-            state_msg = "Current State: IDLE — all transports are off. Select USB, Wi-Fi, or Bluetooth below."
+            choices = "USB or Wi-Fi" if IS_WINDOWS else "USB, Wi-Fi, or Bluetooth"
+            state_msg = f"Current State: IDLE — all transports are off. Select {choices} below."
         else:
             state_msg = f"Current State: Listening on {', '.join(active_modes)} (waiting for Stream Deck...)"
         self.lbl_connect_state.setText(state_msg)
@@ -1813,6 +1910,16 @@ class DeckMainWindow(QtWidgets.QMainWindow):
     def push_profile_to_deck(self):
         if not self.current_app_id:
             return
+        if IS_WINDOWS:
+            try:
+                self.control_client.call("SetOverride", self.current_app_id)
+                self.status_updated.emit(
+                    f"Pushed profile '{self.current_app_id}' to deck hardware", "#10b981"
+                )
+                self.poll_deckd_status()
+            except (OSError, RuntimeError, ValueError) as error:
+                self.status_updated.emit(f"Failed to push profile: {error}", "#ef4444")
+            return
         if self.dbus_iface:
             self.dbus_iface.call("SetOverride", self.current_app_id)
             self.status_updated.emit(f"Pushed profile '{self.current_app_id}' to deck hardware", "#10b981")
@@ -1828,6 +1935,16 @@ class DeckMainWindow(QtWidgets.QMainWindow):
                 self.status_updated.emit(f"Failed to push profile: {e}", "#ef4444")
 
     def clear_deck_override(self):
+        if IS_WINDOWS:
+            try:
+                self.control_client.call("SetOverride", "")
+                self.status_updated.emit(
+                    "Cleared deck override (following window focus)", "#38bdf8"
+                )
+                self.poll_deckd_status()
+            except (OSError, RuntimeError, ValueError) as error:
+                self.status_updated.emit(f"Failed to clear override: {error}", "#ef4444")
+            return
         if self.dbus_iface:
             self.dbus_iface.call("SetOverride", "")
             self.status_updated.emit("Cleared deck override (following window focus)", "#38bdf8")
@@ -1908,11 +2025,19 @@ class DeckMainWindow(QtWidgets.QMainWindow):
             else:
                 entries = suggest_smart_defaults(self._get_discovered_apps())
                 self.lbl_launcher_info.setText(
-                    f"Showing smart Linux defaults ({len(entries)} app(s) detected) — edit to customize"
+                    f"Showing smart defaults ({len(entries)} app(s) detected) — edit to customize"
                 )
             for entry in entries:
                 if isinstance(entry, str):
-                    entry = {"id": entry, "label": short_label(entry[:-8]), "icon": "app", "color": "accent"}
+                    app_label = entry.replace("\\", "/").rsplit("/", 1)[-1]
+                    for suffix in (".desktop", ".lnk", ".url"):
+                        app_label = app_label.removesuffix(suffix)
+                    entry = {
+                        "id": entry,
+                        "label": short_label(app_label),
+                        "icon": "app",
+                        "color": "accent",
+                    }
                 clean = {
                     "id": normalize_desktop_id(str(entry.get("id", ""))),
                     "label": str(entry.get("label", ""))[:13],
@@ -2039,7 +2164,10 @@ class DeckMainWindow(QtWidgets.QMainWindow):
             return
         item = self.list_launcher_selected.item(row_idx)
         entry = dict(item.data(Qt.ItemDataRole.UserRole))
-        entry["label"] = self.edit_l_label.text().strip()[:13] or short_label(entry.get("id", "App")[:-8])
+        app_label = str(entry.get("id", "App")).replace("\\", "/").rsplit("/", 1)[-1]
+        for suffix in (".desktop", ".lnk", ".url"):
+            app_label = app_label.removesuffix(suffix)
+        entry["label"] = self.edit_l_label.text().strip()[:13] or short_label(app_label)
         ic_data = self.combo_l_icon.currentData()
         entry["icon"] = ic_data if ic_data is not None else self.combo_l_icon.currentText().strip()
         entry["color"] = self.combo_l_color.currentText().strip() or "accent"
@@ -2300,11 +2428,14 @@ class DeckMainWindow(QtWidgets.QMainWindow):
             self.lbl_shortcut_valid.setStyleSheet("color: #38bdf8; font-size: 11px;")
             return
         if action_type == 2:
-            self.lbl_shortcut_valid.setText(f"🚀 Launches installed Linux app: {normalize_desktop_id(val)}")
+            platform_app = "Windows Start Menu app" if IS_WINDOWS else "installed Linux app"
+            self.lbl_shortcut_valid.setText(
+                f"🚀 Launches {platform_app}: {normalize_desktop_id(val)}"
+            )
             self.lbl_shortcut_valid.setStyleSheet("color: #38bdf8; font-size: 11px;")
             return
 
-        if key_token_to_code is not None:
+        if key_token_validator is not None:
             chords = val.split(",")
             unknown = []
             for ch in chords:
@@ -2312,7 +2443,7 @@ class DeckMainWindow(QtWidgets.QMainWindow):
                     tok = tok.strip().lower()
                     if tok:
                         try:
-                            key_token_to_code(tok)
+                            key_token_validator(tok)
                         except ValueError:
                             unknown.append(tok)
             if unknown:
@@ -2578,18 +2709,30 @@ class DeckMainWindow(QtWidgets.QMainWindow):
 
         threading.Thread(target=run_hook, daemon=True).start()
 
-    def _set_transport_enabled(self, method: str, checked: bool):
+    def _set_transport_enabled(self, method: str, checked: bool) -> bool:
         checked = bool(checked)
+        if IS_WINDOWS:
+            try:
+                self.control_client.call(method, checked)
+                self.poll_deckd_status()
+                return True
+            except (OSError, RuntimeError, ValueError) as error:
+                self.status_updated.emit(f"Could not update deckd transport: {error}", "#ef4444")
+                self.poll_deckd_status()
+                return False
         if self.dbus_iface:
             self.dbus_iface.call(method, checked)
+            return True
         else:
             try:
                 subprocess.run([
                     "busctl", "--user", "call", "org.mmesp32.Deckd", "/org/mmesp32/Deckd",
                     "org.mmesp32.Deckd1", method, "b", "true" if checked else "false"
-                ], timeout=2)
-            except Exception:
-                pass
+                ], timeout=2, check=True, capture_output=True, text=True)
+                return True
+            except (OSError, subprocess.SubprocessError) as error:
+                self.status_updated.emit(f"Could not update deckd transport: {error}", "#ef4444")
+                return False
 
     def toggle_ble(self, checked):
         self._set_transport_enabled("SetBleEnabled", checked)
@@ -2606,14 +2749,16 @@ class DeckMainWindow(QtWidgets.QMainWindow):
             "wifi": (mode == "wifi"),
             "ble": (mode == "ble"),
         }
+        succeeded = True
         for method, key in (
             ("SetUsbEnabled", "usb"),
             ("SetWifiEnabled", "wifi"),
             ("SetBleEnabled", "ble"),
         ):
-            self._set_transport_enabled(method, desired[key])
+            succeeded = self._set_transport_enabled(method, desired[key]) and succeeded
         labels = {"usb": "USB Serial", "wifi": "Wi-Fi (TCP/mDNS)", "ble": "Bluetooth (BLE)", "idle": "Idle (all transports off)"}
-        self.status_updated.emit(f"Connection mode set to {labels.get(mode, mode)}", "#38bdf8")
+        if succeeded:
+            self.status_updated.emit(f"Connection mode set to {labels.get(mode, mode)}", "#38bdf8")
         self.poll_deckd_status()
 
     @Slot(str, str)
