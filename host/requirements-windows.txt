@@ -1,0 +1,4 @@
+# Minimal Windows host dependencies for USB Serial + Wi-Fi (TCP/mDNS).
+# (BLE GATT server, evdev/uinput, and D-Bus are Linux-only and omitted here.)
+pyserial>=3.5
+zeroconf>=0.130

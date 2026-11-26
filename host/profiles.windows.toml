@@ -1,0 +1,127 @@
+# Starter Stream Deck profiles for Windows (USB Serial + Wi-Fi).
+# Process names from WinFocusWatcher are lowercase executable stems
+# (e.g. "code" for Code.exe, "msedge" for msedge.exe, "windowsterminal" for WindowsTerminal.exe).
+
+[[app.default.groups]]
+title = "Quick Launch"
+color = "accent"
+buttons = [
+    { label = "Term", shell = "wt", icon = "terminal", color = "warn" },
+    { label = "Files", shell = "explorer", icon = "folder", color = "accent" },
+    { label = "Browser", shell = "start https://google.com", icon = "globe", color = "accent" },
+    { label = "Code", shell = "code", icon = "code", color = "accent" },
+    { label = "Copy", keys = "ctrl+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+v", icon = "paste", color = "idle" },
+    { label = "Snip", keys = "super+shift+s", icon = "camera", color = "good" },
+    { label = "Lock", shell = "rundll32.exe user32.dll,LockWorkStation", icon = "lock", color = "bad" },
+]
+
+[[app.default.groups]]
+title = "Media & System"
+color = "good"
+buttons = [
+    { label = "Play", keys = "play", icon = "play", color = "good" },
+    { label = "Mute", keys = "mute", icon = "mute", color = "bad" },
+    { label = "Prev", keys = "prev", icon = "prev", color = "idle" },
+    { label = "Next", keys = "next", icon = "next", color = "idle" },
+    { label = "Vol+", keys = "volup", icon = "volup", color = "good" },
+    { label = "Vol-", keys = "voldown", icon = "voldown", color = "good" },
+    { label = "TaskMgr", keys = "ctrl+shift+esc", icon = "activity", color = "warn" },
+    { label = "Close", keys = "alt+f4", icon = "close", color = "bad" },
+]
+
+[[app.default.groups]]
+title = "Window Snap"
+color = "accent"
+buttons = [
+    { label = "SnapLeft", keys = "super+left", icon = "left", color = "accent" },
+    { label = "SnapRight", keys = "super+right", icon = "right", color = "accent" },
+    { label = "MaxWin", keys = "super+up", icon = "up", color = "good" },
+    { label = "MinWin", keys = "super+down", icon = "down", color = "idle" },
+    { label = "Desktop", keys = "super+d", icon = "home", color = "idle" },
+    { label = "TaskView", keys = "super+tab", icon = "list", color = "accent" },
+    { label = "Settings", keys = "super+i", icon = "settings", color = "warn" },
+    { label = "Search", keys = "super+s", icon = "eye", color = "accent" },
+]
+
+[app.code]
+aliases = ["code", "code - insiders"]
+match_title = ["Visual Studio Code"]
+
+[[app.code.groups]]
+title = "Editor"
+color = "accent"
+buttons = [
+    { label = "Palette", keys = "ctrl+shift+p", icon = "terminal", color = "accent" },
+    { label = "GoFile", keys = "ctrl+p", icon = "folder", color = "accent" },
+    { label = "Save", keys = "ctrl+s", icon = "ok", color = "good" },
+    { label = "Format", keys = "shift+alt+f", icon = "code", color = "good" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "Replace", keys = "ctrl+h", icon = "refresh", color = "idle" },
+    { label = "Comment", keys = "ctrl+slash", icon = "code", color = "idle" },
+    { label = "CloseTab", keys = "ctrl+w", icon = "close", color = "bad" },
+]
+
+[[app.code.groups]]
+title = "Panels & Run"
+color = "good"
+buttons = [
+    { label = "Term", keys = "ctrl+grave", icon = "terminal", color = "warn" },
+    { label = "Sidebar", keys = "ctrl+b", icon = "list", color = "idle" },
+    { label = "Explorer", keys = "ctrl+shift+e", icon = "folder", color = "accent" },
+    { label = "Search", keys = "ctrl+shift+f", icon = "eye", color = "accent" },
+    { label = "Git", keys = "ctrl+shift+g", icon = "code", color = "good" },
+    { label = "Run", keys = "f5", icon = "play", color = "good" },
+    { label = "StepOver", keys = "f10", icon = "next", color = "warn" },
+    { label = "Stop", keys = "shift+f5", icon = "stop", color = "bad" },
+]
+
+[app.browser]
+aliases = ["msedge", "chrome", "firefox", "brave"]
+match_title = ["Microsoft Edge", "Google Chrome", "Mozilla Firefox", "Brave"]
+
+[[app.browser.groups]]
+title = "Navigation"
+color = "accent"
+buttons = [
+    { label = "NewTab", keys = "ctrl+t", icon = "plus", color = "accent" },
+    { label = "CloseTab", keys = "ctrl+w", icon = "close", color = "bad" },
+    { label = "Reopen", keys = "ctrl+shift+t", icon = "refresh", color = "good" },
+    { label = "Reload", keys = "ctrl+r", icon = "refresh", color = "idle" },
+    { label = "Back", keys = "alt+left", icon = "left", color = "idle" },
+    { label = "Forward", keys = "alt+right", icon = "right", color = "idle" },
+    { label = "Find", keys = "ctrl+f", icon = "eye", color = "idle" },
+    { label = "DevTool", keys = "f12", icon = "code", color = "warn" },
+]
+
+[[app.browser.groups]]
+title = "Views & Zoom"
+color = "good"
+buttons = [
+    { label = "Private", keys = "ctrl+shift+n", icon = "eye", color = "warn" },
+    { label = "Bookmarks", keys = "ctrl+shift+o", icon = "list", color = "accent" },
+    { label = "History", keys = "ctrl+h", icon = "list", color = "idle" },
+    { label = "Downlds", keys = "ctrl+j", icon = "download", color = "idle" },
+    { label = "Zoom+", keys = "ctrl+equal", icon = "plus", color = "good" },
+    { label = "Zoom-", keys = "ctrl+minus", icon = "minus", color = "good" },
+    { label = "ResetZm", keys = "ctrl+0", icon = "refresh", color = "idle" },
+    { label = "FullScrn", keys = "f11", icon = "gps", color = "accent" },
+]
+
+[app.windowsterminal]
+aliases = ["windowsterminal", "powershell", "pwsh", "cmd"]
+match_title = ["Windows PowerShell", "Command Prompt", "Terminal"]
+
+[[app.windowsterminal.groups]]
+title = "Terminal"
+color = "warn"
+buttons = [
+    { label = "NewTab", keys = "ctrl+shift+t", icon = "plus", color = "accent" },
+    { label = "CloseTab", keys = "ctrl+shift+w", icon = "close", color = "bad" },
+    { label = "SplitV", keys = "alt+shift+plus", icon = "right", color = "accent" },
+    { label = "SplitH", keys = "alt+shift+minus", icon = "down", color = "accent" },
+    { label = "Copy", keys = "ctrl+shift+c", icon = "copy", color = "idle" },
+    { label = "Paste", keys = "ctrl+shift+v", icon = "paste", color = "idle" },
+    { label = "Find", keys = "ctrl+shift+f", icon = "eye", color = "idle" },
+    { label = "Clear", keys = "ctrl+l", icon = "refresh", color = "warn" },
+]

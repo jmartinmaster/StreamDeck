@@ -115,6 +115,21 @@ except ImportError:  # pragma: no cover - optional dependency
     except ImportError:
         HAVE_BLE = False
 
+try:
+    from win_platform import (
+        WinFocusWatcher,
+        WinKeyInjector,
+        find_default_serial_port,
+    )
+except ImportError:  # pragma: no cover - package import fallback
+    from .win_platform import (  # type: ignore[no-redef]
+        WinFocusWatcher,
+        WinKeyInjector,
+        find_default_serial_port,
+    )
+
+IS_WINDOWS = sys.platform == "win32"
+
 log = logging.getLogger("deckd")
 
 PAGE_SIZE = 16
@@ -1209,12 +1224,7 @@ class DeckSession:
                 self.injector.send_chord(button.keys)
             log.info("pressed %r -> keys %s", button.label, button.keys)
         elif button.shell:
-            subprocess.Popen(
-                button.shell,
-                shell=True,
-                start_new_session=True,
-                stdout=subprocess.DEVNULL,
-            )
+            _spawn_shell_command(button.shell)
             log.info("pressed %r -> shell %s", button.label, button.shell)
         else:
             raise ValueError(f"button {button.label!r} has no action")
@@ -1598,20 +1608,68 @@ class WifiManager:
             self.listener = None
 
 
+def _spawn_shell_command(command: str) -> subprocess.Popen:
+    """Spawn a detached background shell command on Linux or Windows."""
+    if sys.platform == "win32":
+        creationflags = (
+            getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+            | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+            | getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+        )
+        return subprocess.Popen(
+            command,
+            shell=True,
+            creationflags=creationflags,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    return subprocess.Popen(
+        command,
+        shell=True,
+        start_new_session=True,
+        stdout=subprocess.DEVNULL,
+    )
+
+
+def _resolve_serial_port(port_arg: str | None) -> str | None:
+    """Resolve ``--port`` (supports explicit port, ``none``, or ``auto``)."""
+    if not port_arg:
+        return None
+    lowered = port_arg.strip().lower()
+    if lowered == "none":
+        return None
+    if lowered == "auto":
+        return find_default_serial_port()
+    return port_arg
+
+
+def _default_profiles_path() -> Path:
+    """Return the default profiles TOML path for the current platform."""
+    base_dir = Path(__file__).resolve().parent
+    if sys.platform == "win32":
+        win_profiles = base_dir / "profiles.windows.toml"
+        if win_profiles.is_file():
+            return win_profiles
+    return base_dir / "profiles.toml"
+
+
 def run(args: argparse.Namespace) -> int:
     profile_store = ProfileStore(Path(args.profiles))
     profiles = profile_store.profiles
-    injector = KeyInjector()
+    injector = WinKeyInjector() if sys.platform == "win32" else KeyInjector()
     unlock_key_arg = getattr(args, "unlock_key", None)
     unlock_store = (
         UnlockKeyStore(Path(unlock_key_arg) if unlock_key_arg else None)
         if HAVE_UNLOCK_CRYPTO and UnlockKeyStore is not None
         else None
     )
-    focus_watcher = FocusWatcher(
-        bus_name=args.focus_bus_name,
-        object_path=args.focus_object_path,
-    )
+    if sys.platform == "win32":
+        focus_watcher = WinFocusWatcher()
+    else:
+        focus_watcher = FocusWatcher(
+            bus_name=args.focus_bus_name,
+            object_path=args.focus_object_path,
+        )
     focus_watcher.start()
 
     wifi_arg = getattr(args, "wifi", None)
@@ -1665,22 +1723,24 @@ def run(args: argparse.Namespace) -> int:
                     and args.port.lower() != "none"
                     and now - last_serial_attempt >= SERIAL_RETRY_INTERVAL):
                 last_serial_attempt = now
-                try:
-                    with serial.Serial(args.port, args.baud, timeout=0.2) as port:
-                        log.info("connected to %s", args.port)
-                        time.sleep(args.settle)
-                        port.reset_input_buffer()
-                        session = DeckSession(port, profiles, injector,
-                                              focus_watcher, profile_store,
-                                              control, "usb",
-                                              unlock_store=unlock_store)
-                        pump_session(session, ble_manager=ble_manager,
-                                     wifi_manager=wifi_manager,
-                                     idle_timeout=SERIAL_IDLE_TIMEOUT)
-                except (serial.SerialException, ConnectionError) as error:
-                    log.debug("serial session ended/unavailable (%s)", error)
-                finally:
-                    publish_disconnected()
+                serial_port = _resolve_serial_port(args.port)
+                if serial_port:
+                    try:
+                        with serial.Serial(serial_port, args.baud, timeout=0.2) as port:
+                            log.info("connected to %s", serial_port)
+                            time.sleep(args.settle)
+                            port.reset_input_buffer()
+                            session = DeckSession(port, profiles, injector,
+                                                  focus_watcher, profile_store,
+                                                  control, "usb",
+                                                  unlock_store=unlock_store)
+                            pump_session(session, ble_manager=ble_manager,
+                                         wifi_manager=wifi_manager,
+                                         idle_timeout=SERIAL_IDLE_TIMEOUT)
+                    except (serial.SerialException, ConnectionError) as error:
+                        log.debug("serial session ended/unavailable (%s)", error)
+                    finally:
+                        publish_disconnected()
 
             # Bluetooth BLE transport.
             ble_conn = ble_manager.accept(timeout=0.1)
@@ -1724,12 +1784,14 @@ def run(args: argparse.Namespace) -> int:
                 time.sleep(0.25)
     except KeyboardInterrupt:
         log.info("shutting down")
-        if control.usb_enabled() and args.port and args.port.lower() != "none":
-            try:
-                with serial.Serial(args.port, args.baud, timeout=0.5) as port:
-                    port.write(b"DECK BYE\n")
-            except serial.SerialException:
-                pass
+        if control.usb_enabled():
+            serial_port = _resolve_serial_port(args.port)
+            if serial_port:
+                try:
+                    with serial.Serial(serial_port, args.baud, timeout=0.5) as port:
+                        port.write(b"DECK BYE\n")
+                except serial.SerialException:
+                    pass
         return 0
     finally:
         ble_manager.close()
@@ -1737,12 +1799,17 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    is_win = sys.platform == "win32"
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--port", default="/dev/ttyUSB0", help="serial port")
+    parser.add_argument(
+        "--port",
+        default="auto" if is_win else "/dev/ttyUSB0",
+        help="serial port (e.g. COM3, /dev/ttyUSB0, 'auto', or 'none')",
+    )
     parser.add_argument("--baud", type=int, default=115200)
     parser.add_argument(
         "--profiles",
-        default=str(Path(__file__).resolve().parent / "profiles.toml"),
+        default=str(_default_profiles_path()),
     )
     parser.add_argument(
         "--settle",
@@ -1759,14 +1826,14 @@ def main() -> int:
     parser.add_argument(
         "--wifi",
         action=argparse.BooleanOptionalAction,
-        default=False,
-        help="enable WiFi TCP/mDNS transport on startup (default: false / idle)",
+        default=is_win,
+        help="enable WiFi TCP/mDNS transport on startup (default: true on Windows, false on Linux)",
     )
     parser.add_argument(
         "--usb",
         action=argparse.BooleanOptionalAction,
-        default=False,
-        help="enable USB serial transport on startup (default: false / idle)",
+        default=is_win,
+        help="enable USB serial transport on startup (default: true on Windows, false on Linux)",
     )
     parser.add_argument(
         "--ble",
